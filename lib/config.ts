@@ -1,1 +1,1 @@
-export const RESOLUTION: [number, number] = [1300, 700];
+export const RESOLUTION: [number, number] = [1000, 550];

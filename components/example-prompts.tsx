@@ -7,18 +7,20 @@ import { Button } from "./ui/button";
 interface ExamplePromptProps {
   text: string;
   onClick: () => void;
+  disabled?: boolean;
 }
 
 /**
  * Individual example prompt button
  */
-export function ExamplePrompt({ text, onClick }: ExamplePromptProps) {
+export function ExamplePrompt({ text, onClick, disabled }: ExamplePromptProps) {
   return (
     <Button
       onClick={onClick}
-      variant="muted"
+      variant="outline"
       size="lg"
       className="text-left whitespace-nowrap"
+      disabled={disabled}
     >
       {text}
     </Button>
@@ -28,6 +30,7 @@ export function ExamplePrompt({ text, onClick }: ExamplePromptProps) {
 interface ExamplePromptsProps {
   onPromptClick: (prompt: string) => void;
   prompts?: Array<{ text: string; prompt: string }>;
+  disabled?: boolean;
 }
 
 /**
@@ -49,6 +52,7 @@ export function ExamplePrompts({
       prompt: "Show me the latest news about OpenAI",
     },
   ],
+  disabled = false,
 }: ExamplePromptsProps) {
   return (
     <div className="flex flex-col items-center gap-4 mx-auto my-6 w-full max-w-[600px]">
@@ -62,6 +66,7 @@ export function ExamplePrompts({
             key={index}
             text={item.text}
             onClick={() => onPromptClick(item.prompt)}
+            disabled={disabled}
           />
         ))}
       </div>

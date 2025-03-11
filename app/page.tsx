@@ -1,7 +1,14 @@
 "use client";
 
 import { useRef, useState, useEffect } from "react";
-import { MoonIcon, SunIcon, Timer, Trash2, Power } from "lucide-react";
+import {
+  MoonIcon,
+  SunIcon,
+  Timer,
+  Trash2,
+  Power,
+  PackageOpen,
+} from "lucide-react";
 import { useTheme } from "next-themes";
 import { GithubLogo } from "@phosphor-icons/react";
 import { Sandbox } from "@e2b/desktop";
@@ -194,7 +201,7 @@ export default function Home() {
   }, [timeRemaining, sandboxId, stopGeneration, clearMessages]);
 
   return (
-    <div className="flex flex-col items-center justify-between h-dvh max-h-full p-4">
+    <div className="flex flex-col items-center justify-between h-dvh max-h-full p-6">
       <div className="w-full flex flex-col items-center max-h-full flex-1">
         {/* Windows XP-like Container */}
         <Frame
@@ -320,7 +327,8 @@ export default function Home() {
             ) : (
               <div className="absolute inset-0 flex items-center justify-center">
                 <Button onClick={startSandbox} variant="accent" size="lg">
-                  Start a new Instance
+                  <PackageOpen className="w-4 h-4" />
+                  Start new Sandbox
                 </Button>
               </div>
             )}
@@ -361,7 +369,10 @@ export default function Home() {
 
           {/* Example Prompts */}
           {messages.length === 0 && (
-            <ExamplePrompts onPromptClick={handleExampleClick} />
+            <ExamplePrompts
+              onPromptClick={handleExampleClick}
+              disabled={!sandboxId}
+            />
           )}
 
           {/* Chat Input */}
