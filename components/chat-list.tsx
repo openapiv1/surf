@@ -3,16 +3,22 @@
 import React, { useRef, useEffect } from "react";
 import { ChatMessage } from "./chat-message";
 import { ChatMessage as ChatMessageType } from "@/types/chat";
+import { cn } from "@/lib/utils";
 
 interface ChatListProps {
   messages: ChatMessageType[];
   groupActions?: boolean;
+  className?: string;
 }
 
 /**
  * Renders a list of chat messages with auto-scrolling
  */
-export function ChatList({ messages, groupActions = true }: ChatListProps) {
+export function ChatList({
+  messages,
+  groupActions = true,
+  className,
+}: ChatListProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -51,11 +57,16 @@ export function ChatList({ messages, groupActions = true }: ChatListProps) {
   return (
     <div
       ref={containerRef}
-      className="flex-1 overflow-y-auto px-6 py-4 space-y-6"
+      className={cn("overflow-y-auto px-6", "space-y-4", className)}
     >
-      {displayMessages.map((message) => (
-        <ChatMessage key={message.id} message={message} />
-      ))}
+      {displayMessages.length !== 0 &&
+        displayMessages.map((message) => (
+          <ChatMessage
+            key={message.id}
+            message={message}
+            className="animate-fade-slide-in"
+          />
+        ))}
       <div ref={messagesEndRef} />
     </div>
   );

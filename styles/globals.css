@@ -11,7 +11,7 @@
   }
 
   body {
-    @apply bg-bg text-fg tracking-wide antialiased;
+    @apply bg-gradient-to-t from-bg to-bg-100 text-fg tracking-wide antialiased;
   }
 
   h1,
@@ -22,4 +22,9 @@
   h6 {
     @apply font-mono font-light uppercase;
   }
+
+}
+
+.lucide {
+  stroke-width: 1.5px;
 }

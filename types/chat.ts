@@ -30,11 +30,6 @@ export interface ComputerCallPart extends MessagePart {
 }
 
 /**
- * Union type for all message parts
- */
-export type AnyMessagePart = ReasoningPart | ComputerCallPart | MessagePart;
-
-/**
  * Role of a chat message
  */
 export type MessageRole = "user" | "assistant" | "system" | "action";
@@ -45,7 +40,6 @@ export type MessageRole = "user" | "assistant" | "system" | "action";
 export interface BaseChatMessage {
   id: string;
   role: MessageRole;
-  timestamp?: number;
 }
 
 /**
@@ -130,3 +124,38 @@ export interface SendMessageOptions {
   sandboxId: string;
   environment?: string;
 }
+
+export type MessagePartType = "text" | "code" | "image" | "link";
+
+export interface BaseMessagePart {
+  type: MessagePartType;
+}
+
+export interface TextMessagePart extends BaseMessagePart {
+  type: "text";
+  text: string;
+}
+
+export interface CodeMessagePart extends BaseMessagePart {
+  type: "code";
+  code: string;
+  language?: string;
+}
+
+export interface ImageMessagePart extends BaseMessagePart {
+  type: "image";
+  url: string;
+  alt?: string;
+}
+
+export interface LinkMessagePart extends BaseMessagePart {
+  type: "link";
+  url: string;
+  title?: string;
+}
+
+export type AnyMessagePart =
+  | TextMessagePart
+  | CodeMessagePart
+  | ImageMessagePart
+  | LinkMessagePart;

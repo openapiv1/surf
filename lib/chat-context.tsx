@@ -126,7 +126,6 @@ export function ChatProvider({ children }: ChatProviderProps) {
       role: "user",
       content,
       id: Date.now().toString(),
-      timestamp: Date.now(),
     };
 
     setMessages((prev) => [...prev, userMessage]);
@@ -242,7 +241,7 @@ export function ChatProvider({ children }: ChatProviderProps) {
               // Extract text content from reasoning items
               const reasoningItems = parsedEvent.content.filter(
                 (item: AnyMessagePart) =>
-                  item.type === "message" && "content" in item
+                  item.type === "text" && "content" in item
               );
 
               if (reasoningItems.length > 0) {
@@ -292,7 +291,6 @@ export function ChatProvider({ children }: ChatProviderProps) {
                   action: parsedEvent.action,
                   callId: parsedEvent.callId,
                   status: "pending",
-                  timestamp: Date.now(),
                 };
 
                 setMessages((prev) => [...prev, actionMessage]);

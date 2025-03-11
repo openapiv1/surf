@@ -3,12 +3,20 @@ import "@/styles/globals.css";
 import { Metadata } from "next";
 import { Toaster } from "sonner";
 import { Providers } from "./providers";
-import { Inter } from "next/font/google";
+import { IBM_Plex_Sans, IBM_Plex_Mono } from "next/font/google";
 import { ChatProvider } from "@/lib/chat-context";
-import GridPattern from "@/components/ui/grid-pattern";
-import { cn } from "@/lib/utils";
 
-const inter = Inter({ subsets: ["latin"] });
+const ibmPlexSans = IBM_Plex_Sans({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-ibm-plex-sans",
+});
+
+const ibmPlexMono = IBM_Plex_Mono({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-ibm-plex-mono",
+});
 
 export const metadata: Metadata = {
   title: "Computer Use App",
@@ -22,25 +30,27 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={inter.className} suppressHydrationWarning>
+      <body
+        className={`${ibmPlexSans.variable} ${ibmPlexMono.variable}`}
+        suppressHydrationWarning
+      >
         <Providers>
           <ChatProvider>
             <Toaster position="top-center" richColors />
-            <GridPattern
+            {/*             <GridPattern
               width={50}
               height={50}
               x={-1}
               y={-1}
               strokeDasharray={"4 2"}
               className={cn(
-                "[mask-image:radial-gradient(50vw_40vh_at_center,white,transparent)]",
-                "z-10"
+                "[mask-image:radial-gradient(50vw_40vh_at_center,white,transparent)]"
               )}
               gradientFrom="var(--accent-100)"
               gradientVia="hsl(from var(--fg-100) h s l / 0.1)"
               gradientTo="var(--accent-100)"
               gradientDegrees={90}
-            />
+            /> */}
             {children}
           </ChatProvider>
         </Providers>
