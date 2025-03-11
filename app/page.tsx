@@ -1,71 +1,64 @@
 "use client";
 
 import { useRef, useState, useEffect } from "react";
-import { MoonIcon, SunIcon, StopCircle, Timer, Trash2, Power, Sparkles } from "lucide-react";
+import {
+  MoonIcon,
+  SunIcon,
+  StopCircle,
+  Timer,
+  Trash2,
+  Power,
+  Sparkles,
+} from "lucide-react";
 import { useTheme } from "next-themes";
-import { Message } from "@/components/message";
 import { useScrollToBottom } from "@/components/use-scroll-to-bottom";
-import { PaperPlaneRight, GithubLogo } from "@phosphor-icons/react";
-import { useChat } from "ai/react";
-import { Sandbox } from '@/lib/sandbox';
+import { GithubLogo } from "@phosphor-icons/react";
+import { Sandbox } from "@e2b/desktop";
 import { toast } from "sonner";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-} from "@/components/ui/select";
-import { models } from "@/lib/model-config";
-import { createSandbox, increaseTimeout, stopSandboxAction } from "@/app/actions";
+  createSandbox,
+  increaseTimeout,
+  stopSandboxAction,
+} from "@/app/actions";
 import { motion, AnimatePresence } from "framer-motion";
+import { RESOLUTION } from "@/lib/config";
+import { ChatList } from "@/components/chat-list";
+import { ChatInput } from "@/components/chat-input";
+import { ExamplePrompts } from "@/components/example-prompts";
+import { useChat } from "@/lib/chat-context";
 
-const ExamplePrompt = ({ text, onClick }: { text: string; onClick: () => void }) => (
-  <button
-    onClick={onClick}
-    className="text-sm px-4 py-2 rounded-lg border border-[#EBEBEB] dark:border-[#333333] hover:bg-[#F5F5F5] dark:hover:bg-[#1A1A1A] transition-colors text-left whitespace-nowrap text-[#000000] dark:text-[#FFFFFF]"
-  >
-    {text}
-  </button>
-);
-
+/**
+ * Main page component
+ */
 export default function Home() {
   const [sandbox, setSandbox] = useState<Sandbox | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [vncUrl, setVncUrl] = useState<string | null>(null);
-  const [selectedModel, setSelectedModel] = useState(models[0].modelId);
   const { theme, setTheme } = useTheme();
   const [timeRemaining, setTimeRemaining] = useState<number>(300); // 5 minutes in seconds
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [mounted, setMounted] = useState(false);
 
+  // Get chat state and functions from context
+  const {
+    messages,
+    isLoading: chatLoading,
+    input,
+    setInput,
+    sendMessage,
+    stopGeneration,
+    clearMessages,
+    handleSubmit,
+  } = useChat();
+
+  // Set mounted state on client
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  const { messages, setMessages, handleSubmit, input, setInput, isLoading: chatLoading, stop, reload, append } =
-    useChat({
-      body: {
-        modelId: selectedModel,
-        sandboxId: sandbox?.sandboxId,
-      },
-      api: '/api/chat',
-      onError(error) {
-        console.error("Failed to send message:", error);
-        if (error.message.includes("rate limit")) {
-          toast.error("Rate limit reached. Please wait a few seconds and we will try again.");
-          setTimeout(() => {
-            append({
-              role: 'user',
-              content: "Please continue the task.",
-            });
-          }, 2000);
-        } else {
-          toast.error(`Failed to send message: ${error.message}`);
-        }
-      },
-      maxSteps: 30,
-    });
-
+  /**
+   * Start a new sandbox instance
+   */
   const startSandbox = async () => {
     setIsLoading(true);
     try {
@@ -82,15 +75,18 @@ export default function Home() {
     }
   };
 
+  /**
+   * Stop the current sandbox instance
+   */
   const stopSandbox = async () => {
     if (sandbox) {
       try {
-        stop();
+        stopGeneration();
         const success = await stopSandboxAction(sandbox.sandboxId);
         if (success) {
           setSandbox(null);
           setVncUrl(null);
-          setMessages([]);
+          clearMessages();
           setTimeRemaining(300);
           toast("Sandbox instance stopped");
         } else {
@@ -103,6 +99,9 @@ export default function Home() {
     }
   };
 
+  /**
+   * Increase the sandbox timeout
+   */
   const handleIncreaseTimeout = async () => {
     if (!sandbox) return;
 
@@ -116,25 +115,46 @@ export default function Home() {
     }
   };
 
-  const inputRef = useRef<HTMLInputElement>(null);
-  const [messagesContainerRef, messagesEndRef] = useScrollToBottom<HTMLDivElement>();
-
-  const handleClearChat = () => {
-    setMessages([]);
-    toast.success("Chat cleared");
+  /**
+   * Handle form submission
+   */
+  const onSubmit = (e: React.FormEvent) => {
+    const content = handleSubmit(e);
+    if (content && sandbox) {
+      sendMessage({
+        content,
+        sandboxId: sandbox.sandboxId,
+        environment: "linux", // Default to linux environment
+      });
+    }
   };
 
+  /**
+   * Handle example prompt click
+   */
   const handleExampleClick = (prompt: string) => {
     if (!sandbox) {
       toast.error("Please start an instance first");
       return;
     }
-    append({
-      role: 'user',
+    sendMessage({
       content: prompt,
+      sandboxId: sandbox.sandboxId,
+      environment: "linux",
     });
   };
 
+  /**
+   * Handle clearing the chat
+   */
+  const handleClearChat = () => {
+    clearMessages();
+    toast.success("Chat cleared");
+  };
+
+  /**
+   * Theme toggle component
+   */
   const ThemeToggle = () => (
     <button
       onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
@@ -148,16 +168,18 @@ export default function Home() {
     </button>
   );
 
+  // Update timer
   useEffect(() => {
     if (!sandbox) return;
     const interval = setInterval(() => {
       if (!chatLoading) {
-        setTimeRemaining(prev => (prev > 0 ? prev - 1 : 0));
+        setTimeRemaining((prev) => (prev > 0 ? prev - 1 : 0));
       }
     }, 1000);
     return () => clearInterval(interval);
   }, [sandbox, chatLoading]);
 
+  // Handle timeout
   useEffect(() => {
     if (!sandbox) return;
 
@@ -169,7 +191,7 @@ export default function Home() {
       (async () => {
         try {
           const desktop = await Sandbox.connect(sandbox.sandboxId);
-          await desktop.vncServer.stop();
+          desktop.stream.stop();
           await desktop.kill();
         } catch (error) {
           console.error("Failed to cleanup sandbox:", error);
@@ -178,12 +200,12 @@ export default function Home() {
 
       setSandbox(null);
       setVncUrl(null);
-      setMessages([]);
-      stop();
+      clearMessages();
+      stopGeneration();
       toast.error("Instance time expired");
       setTimeRemaining(300);
     }
-  }, [timeRemaining, sandbox, stop, chatLoading]);
+  }, [timeRemaining, sandbox, stopGeneration, clearMessages]);
 
   return (
     <div className="flex h-dvh bg-[#FFFFFF] dark:bg-[#0A0A0A]">
@@ -193,7 +215,7 @@ export default function Home() {
           {/* Title and Theme Row */}
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-[#000000] dark:text-[#FFFFFF] font-medium">
-              Computer Use App by{' '}
+              Computer Use App by{" "}
               <span className="text-[#FF8800] inline-flex items-center gap-1">
                 <span className="text-lg">✶</span>
                 <a
@@ -239,7 +261,8 @@ export default function Home() {
                   >
                     <Timer className="h-4 w-4 text-[#000000] dark:text-[#FFFFFF]" />
                     <span className="text-sm font-medium text-[#000000] dark:text-[#FFFFFF]">
-                      {Math.floor(timeRemaining / 60)}:{(timeRemaining % 60).toString().padStart(2, '0')}
+                      {Math.floor(timeRemaining / 60)}:
+                      {(timeRemaining % 60).toString().padStart(2, "0")}
                     </span>
                   </button>
                   <AnimatePresence>
@@ -280,121 +303,23 @@ export default function Home() {
           </div>
         </div>
 
-        <div
-          ref={messagesContainerRef}
-          className="flex-1 overflow-y-auto px-6 py-4 space-y-6"
-        >
-          {messages.map((message) => (
-            <Message
-              key={message.id}
-              role={message.role}
-              content={message.content}
-              parts={message.parts}
-            />
-          ))}
-          <div ref={messagesEndRef} />
-        </div>
+        {/* Chat Messages */}
+        <ChatList messages={messages} groupActions={true} />
 
+        {/* Example Prompts */}
         {messages.length === 0 && (
-          <div className="flex flex-col items-center gap-3 mx-auto my-4 w-full max-w-[600px]">
-            <div className="flex items-center gap-2 text-[#FF8800]">
-              <Sparkles className="w-4 h-4" />
-              <span className="text-sm font-medium">Try these examples</span>
-            </div>
-            <div className="flex gap-2 justify-center w-full overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-[#EBEBEB] dark:scrollbar-thumb-[#333333] scrollbar-track-transparent">
-              <ExamplePrompt 
-                text="Check SF weather" 
-                onClick={() => handleExampleClick("What's the weather like in San Francisco?")}
-              />
-              <ExamplePrompt 
-                text="Find cat pictures" 
-                onClick={() => handleExampleClick("Search for cute cat pictures on the internet")}
-              />
-              <ExamplePrompt 
-                text="OpenAI news" 
-                onClick={() => handleExampleClick("Show me the latest news about OpenAI")}
-              />
-            </div>
-          </div>
+          <ExamplePrompts onPromptClick={handleExampleClick} />
         )}
-        <form
-          onSubmit={handleSubmit}
-          className="px-6 py-4 border-t border-[#EBEBEB] dark:border-[#333333] bg-[#FCFCFC] dark:bg-[#111111]"
-        >
-          <div className="pb-2 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Select
-                value={selectedModel}
-                onValueChange={setSelectedModel}
-              >
-                <SelectTrigger className="w-[200px] h-9 bg-transparent border-[#EBEBEB] dark:border-[#333333] rounded-lg hover:bg-[#F5F5F5] dark:hover:bg-[#1A1A1A] transition-colors focus:ring-1 focus:ring-[#FF8800] focus:ring-opacity-50">
-                  <div className="flex items-center gap-2">
-                    <img
-                      src={models.find(m => m.modelId === selectedModel)?.icon}
-                      alt=""
-                      className="w-4 h-4"
-                    />
-                    <span className="text-sm font-medium">
-                      {models.find(m => m.modelId === selectedModel)?.name}
-                    </span>
-                  </div>
-                </SelectTrigger>
-                <SelectContent className="bg-[#FCFCFC] dark:bg-[#111111] border-[#EBEBEB] dark:border-[#333333]">
-                  {models.map((model) => (
-                    <SelectItem
-                      key={model.modelId}
-                      value={model.modelId}
-                      className="cursor-pointer hover:bg-[#F5F5F5] dark:hover:bg-[#1A1A1A] focus:bg-[#F5F5F5] dark:focus:bg-[#1A1A1A]"
-                    >
-                      <div className="flex items-center gap-2">
-                        <img
-                          src={model.icon}
-                          alt=""
-                          className="w-4 h-4"
-                        />
-                        <span className="text-sm font-medium">
-                          {model.name}
-                        </span>
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          <div className="flex items-center gap-3">
-            <div className="relative flex-1">
-              <input
-                ref={inputRef}
-                className="w-full h-12 px-4 pr-[100px] bg-transparent text-[#000000] dark:text-[#FFFFFF] rounded-lg border border-[#EBEBEB] dark:border-[#333333] outline-none focus:ring-1 focus:ring-[#FF8800] transition-all duration-200 placeholder:text-[#666666] dark:placeholder:text-[#999999] disabled:opacity-50 disabled:cursor-not-allowed"
-                placeholder="Send a message..."
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                autoFocus
-                required
-                disabled={chatLoading || !sandbox}
-              />
-              <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-2">
-                <button
-                  type={chatLoading ? "button" : "submit"}
-                  onClick={chatLoading ? () => stop() : undefined}
-                  className={`p-2 rounded-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed ${chatLoading
-                      ? "bg-red-100 dark:bg-red-900/30 text-red-500 hover:bg-red-200 dark:hover:bg-red-900/50"
-                      : "bg-[#FF8800]/10 text-[#FF8800] hover:bg-[#FF8800]/20"
-                    }`}
-                  disabled={!sandbox}
-                  title={chatLoading ? "Stop generating" : "Send message"}
-                >
-                  {chatLoading ? (
-                    <StopCircle className="w-5 h-5" />
-                  ) : (
-                    <PaperPlaneRight weight="bold" className="w-5 h-5" />
-                  )}
-                </button>
-              </div>
-            </div>
-          </div>
-        </form>
+
+        {/* Chat Input */}
+        <ChatInput
+          input={input}
+          setInput={setInput}
+          onSubmit={onSubmit}
+          isLoading={chatLoading}
+          onStop={stopGeneration}
+          disabled={chatLoading || !sandbox}
+        />
       </div>
 
       {/* Desktop Stream Section */}
@@ -402,7 +327,13 @@ export default function Home() {
         <h2 className="text-[#000000] dark:text-[#FFFFFF] font-medium mb-4">
           Desktop Stream
         </h2>
-        <div className="w-[800px] h-[600px] border border-[#EBEBEB] dark:border-[#333333] rounded-lg overflow-hidden relative bg-[#FFFFFF] dark:bg-[#0A0A0A]">
+        <div
+          style={{
+            width: `${RESOLUTION[0]}px`,
+            height: `${RESOLUTION[1]}px`,
+          }}
+          className="border border-[#EBEBEB] dark:border-[#333333] rounded-lg overflow-hidden relative bg-[#FFFFFF] dark:bg-[#0A0A0A]"
+        >
           {isLoading ? (
             <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-[#FFFFFF] dark:bg-[#0A0A0A]">
               <div className="flex items-center gap-3">
@@ -410,7 +341,9 @@ export default function Home() {
                 <span className="text-xl font-medium text-[#FF8800] animate-pulse">
                   Starting instance
                 </span>
-                <span className="text-3xl text-[#FF8800] animate-spin-reverse">✶</span>
+                <span className="text-3xl text-[#FF8800] animate-spin-reverse">
+                  ✶
+                </span>
               </div>
               <div className="flex items-center gap-2">
                 <span className="h-2 w-2 bg-[#FF8800] rounded-full animate-bounce-delay-1"></span>

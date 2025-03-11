@@ -1,25 +1,30 @@
 import "./globals.css";
 import { Metadata } from "next";
 import { Toaster } from "sonner";
-import { Providers } from './providers'
+import { Providers } from "./providers";
+import { Inter } from "next/font/google";
+import { ChatProvider } from "@/lib/chat-context";
+
+const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "E2B Desktop Use App",
-  description:
-    "A app for E2B desktop use demo, built with Next.js, Tailwind CSS, TypeScript and E2B Desktop Use SDK.",
+  title: "Computer Use App",
+  description: "Control a remote desktop with AI",
 };
 
 export default function RootLayout({
   children,
 }: {
-  children: React.ReactNode
+  children: React.ReactNode;
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body suppressHydrationWarning>
+      <body className={inter.className} suppressHydrationWarning>
         <Providers>
-          <Toaster position="top-center" richColors />
-          {children}
+          <ChatProvider>
+            <Toaster position="top-center" richColors />
+            {children}
+          </ChatProvider>
         </Providers>
       </body>
     </html>

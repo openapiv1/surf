@@ -1,10 +1,129 @@
 # Computer Use App
 
-This application allows you to interact with a remote desktop environment using natural language. It leverages the E2B desktop environment and AI models to execute commands and automate tasks.
+A Next.js application that integrates with OpenAI's Computer Use API and E2B's desktop sandbox to provide a streaming interface for AI-controlled computer interactions.
 
+## Architecture
 
-https://github.com/user-attachments/assets/9f1a22ff-eba4-451f-adec-d9cc3c9763aa
+The application is built with the following components:
 
+### API Types (`lib/api-types.ts`)
+
+Contains type definitions for:
+- OpenAI Computer API requests and responses
+- Server-Sent Events (SSE) for client communication
+- Action execution utilities
+
+### Streaming Utilities (`lib/streaming.ts`)
+
+Provides:
+- Async generators for streaming SSE events
+- Formatting utilities for SSE events
+- Response creation helpers
+
+### API Route (`app/api/chat/route.ts`)
+
+Handles:
+- Request validation
+- E2B sandbox connection
+- OpenAI API integration
+- Streaming responses with SSE
+
+## Event Types
+
+The application streams the following event types:
+
+1. **Update Events**: Contain the latest AI response output
+2. **Action Events**: Details about computer actions being performed
+3. **Reasoning Events**: AI's explanation for actions
+4. **Done Events**: Indicate completion of the interaction
+5. **Error Events**: Contain error information
+
+## Implementation Details
+
+### Async Generators
+
+The application uses async generators to stream events, providing a clean and efficient way to handle asynchronous operations.
+
+```typescript
+export async function* streamComputerInteraction(...): AsyncGenerator<string> {
+  // Implementation
+}
+```
+
+### Type-Safe SSE Events
+
+All SSE events are strongly typed for better developer experience and error prevention:
+
+```typescript
+export type SSEEvent = 
+  | UpdateEvent 
+  | ActionEvent 
+  | ReasoningEvent 
+  | DoneEvent 
+  | ErrorEvent;
+```
+
+### Proper Error Handling
+
+The application includes comprehensive error handling at multiple levels:
+- API request validation
+- OpenAI API errors
+- E2B sandbox connection issues
+- Action execution errors
+
+## Usage
+
+1. Set up environment variables:
+   - `E2B_API_KEY`: Your E2B API key
+   - `OPENAI_API_KEY`: Your OpenAI API key
+
+2. Start the development server:
+   ```
+   npm run dev
+   ```
+
+3. Send a POST request to `/api/chat` with:
+   ```json
+   {
+     "messages": [{"content": "Help me use this computer"}],
+     "sandboxId": "your-sandbox-id",
+     "environment": "ubuntu" // Optional, defaults to "ubuntu"
+   }
+   ```
+
+4. Process the SSE stream on the client side.
+
+## Client-Side Integration
+
+Example of how to consume the SSE stream on the client:
+
+```typescript
+const eventSource = new EventSource('/api/chat');
+
+eventSource.onmessage = (event) => {
+  const data = JSON.parse(event.data);
+  
+  switch (data.type) {
+    case 'update':
+      // Handle update event
+      break;
+    case 'action':
+      // Handle action event
+      break;
+    case 'reasoning':
+      // Handle reasoning event
+      break;
+    case 'done':
+      // Handle done event
+      eventSource.close();
+      break;
+    case 'error':
+      // Handle error event
+      eventSource.close();
+      break;
+  }
+};
+```
 
 ## Prerequisites
 
