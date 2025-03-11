@@ -17,7 +17,7 @@ import {
   UserMessage,
   executeAction,
   sleep,
-} from "./api-types";
+} from "@/types/api";
 import { RESOLUTION } from "./config";
 
 /**

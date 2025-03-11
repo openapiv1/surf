@@ -2,7 +2,7 @@
 
 import React, { useRef, useEffect } from "react";
 import { ChatMessage } from "./chat-message";
-import { ChatMessage as ChatMessageType } from "@/lib/chat-types";
+import { ChatMessage as ChatMessageType } from "@/types/chat";
 
 interface ChatListProps {
   messages: ChatMessageType[];

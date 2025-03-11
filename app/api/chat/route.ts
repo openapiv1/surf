@@ -1,6 +1,6 @@
 import { Sandbox } from "@e2b/desktop";
 import OpenAI from "openai";
-import { ComputerEnvironment } from "@/lib/api-types";
+import { ComputerEnvironment } from "@/types/api";
 import {
   createStreamingResponse,
   streamComputerInteraction,

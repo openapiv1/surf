@@ -2,7 +2,7 @@
  * Type definitions for chat messages and related functionality
  */
 import { ResponseComputerToolCall } from "openai/resources/responses/responses.mjs";
-import { SSEEventType } from "./api-types";
+import { SSEEventType } from "./api";
 
 /**
  * Represents a message part from the AI response

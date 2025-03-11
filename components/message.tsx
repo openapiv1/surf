@@ -1,10 +1,7 @@
 "use client";
 
 import React from "react";
-import {
-  ChatMessage as ChatMessageType,
-  AnyMessagePart,
-} from "@/lib/chat-types";
+import { ChatMessage as ChatMessageType, AnyMessagePart } from "@/types/chat";
 
 interface MessageProps {
   role: ChatMessageType["role"];

@@ -5,7 +5,7 @@ import {
   ChatMessage as ChatMessageType,
   ActionChatMessage,
   AnyMessagePart,
-} from "@/lib/chat-types";
+} from "@/types/chat";
 import {
   MousePointer2,
   Monitor,

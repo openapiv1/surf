@@ -19,8 +19,8 @@ import {
   UserChatMessage,
   AssistantChatMessage,
   SystemChatMessage,
-} from "./chat-types";
-import { SSEEventType } from "./api-types";
+} from "@/types/chat";
+import { SSEEventType } from "@/types/api";
 
 /**
  * Chat context interface
