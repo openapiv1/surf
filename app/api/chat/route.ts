@@ -1,36 +1,39 @@
-import { Desktop } from '@/lib/sandbox'
-import { convertToCoreMessages, generateText, streamText, tool, CoreMessage } from "ai";
-import { z } from 'zod';
-import { OSAtlasProvider } from '@/lib/osatlas';
-import { e2bDesktop, modelsystemprompt, models } from '@/lib/model-config';
-import { ShowUIProvider } from '@/lib/showui';
+import { Desktop } from "@/lib/sandbox";
+import OpenAI from "openai";
 
 const TIMEOUT_MS = 600000;
-const ACTION_DELAY_MS = 4000;
+const ACTION_DELAY_MS = 1000;
 
 async function sleep(ms: number) {
-  return new Promise(resolve => setTimeout(resolve, ms));
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 export async function POST(request: Request) {
-  const { messages, modelId, sandboxId } = await request.json();
+  // 1. Parse request and validate
+  const { messages, sandboxId } = await request.json();
   const apiKey = process.env.E2B_API_KEY!;
+  const openaiApiKey = process.env.OPENAI_API_KEY;
 
   if (!apiKey) {
-    return new Response('E2B API key not found', { status: 500 });
+    return new Response("E2B API key not found", { status: 500 });
+  }
+
+  if (!openaiApiKey) {
+    return new Response("OpenAI API key not found", { status: 500 });
   }
 
   if (!sandboxId) {
-    return new Response('No sandbox ID provided', { status: 400 });
+    return new Response("No sandbox ID provided", { status: 400 });
   }
 
+  // 2. Connect to desktop
   try {
     const desktop = await Desktop.connect(sandboxId, {
       apiKey,
     });
 
     if (!desktop) {
-      return new Response('Failed to connect to sandbox', { status: 500 });
+      return new Response("Failed to connect to sandbox", { status: 500 });
     }
 
     // Start VNC server if not already running
@@ -40,232 +43,199 @@ export async function POST(request: Request) {
       console.error("Failed to start VNC server:", error);
     }
 
-    const systemMessage = (() => {
-      switch (modelId) {
-        case "sonnet": return modelsystemprompt[0].anthropic;
-        case "gpt4o": return modelsystemprompt[0].openai;
-        case "gemini": return modelsystemprompt[0].google;
-        case "grok": return modelsystemprompt[0].xai;
-        case "mistral": return modelsystemprompt[0].mistral
-        case "llama": return modelsystemprompt[0].llama
-        default: return modelsystemprompt[0].openai;
-      }
-    })();
-
     desktop.setTimeout(TIMEOUT_MS);
 
-    const baseActions = [
-      "screenshot", "type", "cursor_position",
-      "left_click", "right_click", "double_click",
-      "middle_click", "key", "mouse_move",
-      "mouse_scroll"
-    ] as const;
+    // 3. Initialize OpenAI client
+    const openai = new OpenAI({
+      apiKey: openaiApiKey,
+    });
 
-    const actions = modelId === "sonnet"
-      ? baseActions
-      : [...baseActions, "find_item_on_screen"] as const;
+    // 4. Take initial screenshot
+    const screenshotData = await desktop.takeScreenshot();
+    const screenshotBase64 = Buffer.from(screenshotData).toString("base64");
 
-    if (models.find(m => m.modelId === modelId)?.vision) {
-      const data = await desktop.takeScreenshot();
-      messages.push({
-        role: "user",
-        content: [
-          { type: "text", text: "Screenshot taken" },
-          { type: "image", image: Buffer.from(data).toString("base64"), mimeType: "image/png" },
-        ]
-      })
-    }
+    // 5. Extract user message from the messages array
+    const userMessage =
+      messages[messages.length - 1]?.content || "Help me use this computer";
 
+    // 6. Make initial request to OpenAI
     try {
-      const result = streamText({
-        model: e2bDesktop.languageModel(modelId),
-        system: systemMessage,
-        temperature: 0,
-        messages: convertToCoreMessages(messages),
-        maxSteps: 30,
-        tools: {
-          computerTool: tool({
-            description: "Mouse/keyboard interactions: ",
-            parameters: z.object({
-              action: z.enum(actions),
-              coordinate: z.array(z.number()).optional().describe("should be used with mouse_move only"),
-              text: z.string().optional().describe("should be used with type and key only"),
-              scrollDirection: z.enum(["up", "down"]).optional().describe("should be used with mouse_scroll only. default is down"),
-            }),
-            execute: async (args) => {
-              console.log("Executing action:", args.action);
-
-              // Add delay before each action
-              await sleep(ACTION_DELAY_MS);
-
-              switch (args.action) {
-                case "screenshot": {
-                  await sleep(ACTION_DELAY_MS);
-
-                  let confirmation;
-                  try {
-                    const visionModel = models.find(m => m.modelId === modelId)?.vision_model;
-                    if (!visionModel) {
-                      return { output: "Model not found" };
-                    }
-                    const data = await desktop.takeScreenshot();
-
-                    const visionMessages = [
-                      {
-                        role: modelId === "llama" ? "user" : "system",
-                        content: `You are a screenshot confirmation or data extraction assistant. 
-                        It is important that you confirm the action's success or provide answer the user's question.
-                        You have been given the entire conversation history and the screenshot.
-                        You have to comply with the following rules:
-                        - The screenshot could be of the desktop, a website, a browser, a chat, a document, etc.
-                        - You have to explain what you see in the screenshot and how it relates to the user's question.
-                        - You need to confirm the action's success or provide answer the user's question.
-                        - If the screenshot is not the answer to the user's question explain the state of the desktop screen.
-                        - You cannot deny to answer the user's question, you have to answer it based on the screenshot.
-                        - You cannot deny to confirm the action's success, you have to confirm it based on the screenshot.
-                        - You cannot deny to provide the answer to the user's question, you have to provide it based on the screenshot.
-                        - You cannot deny to explain the state of the desktop screen, you have to explain it based on the screenshot.`
-                      },
-                      ...messages.filter((m: CoreMessage) => 
-                        typeof m.content === 'string'
-                      ).map((m: CoreMessage) => ({
-                        role: m.role,
-                        content: m.content
-                      })),
-                      {
-                        role: "user",
-                        content: [
-                          { type: "text", text: "Screenshot taken" },
-                          { type: "image", image: Buffer.from(data).toString("base64"), mimeType: "image/png" },
-                        ]
-                      }
-                    ];
-
-                    confirmation = await generateText({
-                      model: e2bDesktop.languageModel(visionModel),
-                      temperature: 0.5,
-                      messages: visionMessages,
-                    })
-                  } catch (error) {
-                    console.error("Error taking screenshot:", error);
-                    return { output: "Error taking screenshot" };
-                  }
-                  return { output: "Screenshot taken", confirmation: confirmation.text };
-                }
-                case "type": {
-                  if (!args.text) {
-                    return "no text provided";
-                  }
-                  await desktop.write(args.text);
-                  return `typed ${args.text}`;
-                }
-                case "cursor_position": {
-                  return desktop.getCursorPosition();
-                }
-                case "left_click": {
-                  await desktop.leftClick();
-                  return `left click performed!`;
-                }
-                case "right_click": {
-                  await desktop.rightClick();
-                  return `right click performed!`;
-                }
-                case "double_click": {
-                  await desktop.doubleClick();
-                  return `double click performed!`;
-                }
-                case "middle_click": {
-                  await desktop.middleClick();
-                  return `middle click performed!`;
-                }
-                case "key": {
-                  if (!args.text) {
-                    return "no key provided";
-                  }
-                  await desktop.hotkey(args.text);
-                  return `pressed key ${args.text}`;
-                }
-                case "mouse_move": {
-                  if (!args.coordinate) {
-                    return "no coordinate provided";
-                  }
-                  await desktop.moveMouse(args.coordinate[0], args.coordinate[1]);
-                  return `moved mouse to ${args.coordinate}!`;
-                }
-                case "mouse_scroll": {
-                  if (!args.scrollDirection) {
-                    return "no scrollDirection provided";
-                  }
-                  await desktop.scroll(args.scrollDirection);
-                  return `scrolled to ${args.scrollDirection}!`;
-                }
-                case "find_item_on_screen": {
-                  if (!args.text) {
-                    return "no search text provided";
-                  }
-                  const screenshot = await desktop.takeScreenshot();
-                  const screenshotArray =
-                    screenshot instanceof Buffer ? new Uint8Array(screenshot) : screenshot;
-
-                  const osAtlas = new OSAtlasProvider();
-                  const position = await osAtlas.call(args.text, screenshotArray);
-
-                  if (!position) {
-                    return "item not found";
-                  }
-
-                  return {
-                    coordinate: position,
-                    message: `Found item at coordinates: ${position[0]}, ${position[1]}`
-                  };
-                }
-                default: {
-                  console.log("Action:", args.action);
-                  console.log("Coordinate:", args.coordinate);
-                  console.log("Text:", args.text);
-                  return `executed ${args.action}`;
-                }
-              }
-            },
-            experimental_toToolResultContent(result) {
-              if (typeof result === "string") {
-                return [{ type: "text", text: result }];
-              }
-              if (result && "data" in result && result.data && typeof result.data === "string") {
-                const base64Data = Buffer.from(result.data).toString("base64");
-                return [{ type: "image", data: base64Data, mimeType: "image/png" }];
-              }
-              return [{ type: "text", text: JSON.stringify(result) }];
-            },
-          })
-        },
-        onChunk(event) {
-          if (event.chunk.type === "tool-call") {
-            console.log("Called Tool: ", event.chunk.toolName);
-          }
-        },
-        onFinish(event) {
-          console.log("Fin reason: ", event.finishReason);
-          console.log("Steps ", event.steps);
-          console.log("Messages: ", event.response.messages);
-        },
-        onError(event): void {
-          console.error("Stream error:", event.error instanceof Error ? event.error.message : JSON.stringify(event.error));
-        }
+      let response = await openai.responses.create({
+        model: "computer-use-preview-2025-03-11",
+        tools: [
+          {
+            type: "computer-preview",
+            display_width: 1024, // Adjust based on your desktop resolution
+            display_height: 768, // Adjust based on your desktop resolution
+            environment: "ubuntu", // Assuming Linux environment, adjust as needed
+          },
+        ],
+        input: [
+          {
+            role: "user",
+            content: userMessage,
+          },
+        ],
+        truncation: "auto",
       });
 
-      return result.toDataStreamResponse();
+      // 7. Process response in a loop
+      const responseStream = new TransformStream();
+      const writer = responseStream.writable.getWriter();
+
+      // Start processing in the background
+      (async () => {
+        try {
+          // Process computer actions in a loop
+          while (true) {
+            // Send current response to client
+            const responseText = JSON.stringify({
+              type: "update",
+              content: response.output,
+            });
+            writer.write(new TextEncoder().encode(responseText + "\n"));
+
+            // Check for computer calls
+            const computerCalls = response.output.filter(
+              (item) => item.type === "computer_call"
+            );
+
+            if (computerCalls.length === 0) {
+              // No more actions, we're done
+              writer.write(
+                new TextEncoder().encode(
+                  JSON.stringify({
+                    type: "done",
+                    content: response.output,
+                  }) + "\n"
+                )
+              );
+              writer.close();
+              break;
+            }
+
+            // Handle the computer call
+            const computerCall = computerCalls[0];
+            const callId = computerCall.call_id;
+            const action = computerCall.action;
+
+            // Execute the action
+            await executeAction(desktop, action);
+
+            // Wait for the action to take effect
+            await sleep(ACTION_DELAY_MS);
+
+            // Take a screenshot after the action
+            const newScreenshotData = await desktop.takeScreenshot();
+            const newScreenshotBase64 =
+              Buffer.from(newScreenshotData).toString("base64");
+
+            // Send the screenshot back to OpenAI
+            response = await openai.responses.create({
+              model: "computer-use-preview-2025-03-11",
+              previous_response_id: response.id,
+              tools: [
+                {
+                  type: "computer-preview",
+                  display_width: 1024,
+                  display_height: 768,
+                  environment: "ubuntu",
+                },
+              ],
+              input: [
+                {
+                  call_id: callId,
+                  type: "computer_call_output",
+                  output: {
+                    type: "computer_screenshot",
+                    image_url: `data:image/png;base64,${newScreenshotBase64}`,
+                  },
+                },
+              ],
+              truncation: "auto",
+            });
+          }
+        } catch (error) {
+          console.error("Error processing response:", error);
+          writer.write(
+            new TextEncoder().encode(
+              JSON.stringify({
+                type: "error",
+                content:
+                  error instanceof Error ? error.message : "Unknown error",
+              }) + "\n"
+            )
+          );
+          writer.close();
+        }
+      })();
+
+      // 8. Return streaming response
+      return new Response(responseStream.readable, {
+        headers: {
+          "Content-Type": "text/event-stream",
+          "Cache-Control": "no-cache",
+          Connection: "keep-alive",
+        },
+      });
     } catch (error) {
-      console.error("Error streaming response:", error);
-      if (error instanceof Error && error.message.includes('rate limit')) {
-        return new Response("Rate limit reached. Please wait a few seconds and try again.",
-          { status: 429 });
+      console.error("Error from OpenAI:", error);
+      if (error instanceof OpenAI.APIError && error?.status === 429) {
+        return new Response(
+          "Rate limit reached. Please wait a few seconds and try again.",
+          { status: 429 }
+        );
       }
-      return new Response("An error occurred. Please try again.",
-        { status: 500 });
+      return new Response(
+        "An error occurred with the OpenAI service. Please try again.",
+        { status: 500 }
+      );
     }
   } catch (error) {
     console.error("Error connecting to sandbox:", error);
     return new Response("Failed to connect to sandbox", { status: 500 });
+  }
+}
+
+// Helper function to execute actions
+async function executeAction(desktop: Desktop, action: any) {
+  console.log("Executing action:", action);
+
+  switch (action.type) {
+    case "click": {
+      // Move mouse to the specified position
+      await desktop.moveMouse(action.x, action.y);
+
+      // Perform the appropriate click based on the button
+      if (action.button === "left") {
+        await desktop.leftClick();
+      } else if (action.button === "right") {
+        await desktop.rightClick();
+      } else if (action.button === "middle") {
+        await desktop.middleClick();
+      } else if (action.button === "double") {
+        await desktop.doubleClick();
+      }
+      break;
+    }
+    case "type": {
+      await desktop.write(action.text);
+      break;
+    }
+    case "key": {
+      await desktop.hotkey(action.key);
+      break;
+    }
+    case "move": {
+      await desktop.moveMouse(action.x, action.y);
+      break;
+    }
+    case "scroll": {
+      const direction = action.direction === "up" ? "up" : "down";
+      await desktop.scroll(direction);
+      break;
+    }
+    default:
+      console.log("Unknown action type:", action.type);
   }
 }
