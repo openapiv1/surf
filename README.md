@@ -47,8 +47,8 @@ Before starting, you'll need:
 
 1. **Clone the repository**
 ```bash
-git clone https://github.com/e2b-dev/computer-use-app
-cd computer-use-app
+git clone https://github.com/e2b-dev/cuse-agent
+cd cuse-agent
 ```
 
 2. **Install dependencies**
