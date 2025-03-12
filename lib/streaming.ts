@@ -5,6 +5,7 @@ import { Sandbox } from "@e2b/desktop";
 import OpenAI from "openai";
 import {
   ActionEvent,
+  ActionCompletedEvent,
   ComputerCallOutput,
   ComputerEnvironment,
   ComputerTool,
@@ -24,7 +25,7 @@ import {
  * @param event The event to format
  * @returns Formatted SSE event string
  */
-function formatSSE(event: SSEEvent): string {
+export function formatSSE(event: SSEEvent): string {
   return `data: ${JSON.stringify(event)}\n\n`;
 }
 
@@ -131,8 +132,12 @@ export async function* streamComputerInteraction(
       // Execute the action
       await executeAction(desktop, action);
 
-      // Wait a bit for the action to complete
-      await sleep(1000);
+      // Send action completed event
+      const actionCompletedEvent: ActionCompletedEvent = {
+        type: SSEEventType.ACTION_COMPLETED,
+        callId,
+      };
+      yield formatSSE(actionCompletedEvent);
 
       // Take a new screenshot
       const newScreenshotData = await desktop.screenshot();

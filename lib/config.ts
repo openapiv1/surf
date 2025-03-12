@@ -1,1 +1,1 @@
-export const RESOLUTION: [number, number] = [1000, 550];
+export const SANDBOX_TIMEOUT_MS = 30_000; // 30 seconds in milliseconds

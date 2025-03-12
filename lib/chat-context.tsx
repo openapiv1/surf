@@ -32,6 +32,9 @@ interface ChatContextType extends ChatState {
   setInput: (input: string) => void;
   input: string;
   handleSubmit: (e: React.FormEvent) => string | undefined;
+  onSandboxCreated: (
+    callback: (sandboxId: string, vncUrl: string) => void
+  ) => void;
 }
 
 /**
@@ -55,6 +58,9 @@ export function ChatProvider({ children }: ChatProviderProps) {
   const [error, setError] = useState<string | null>(null);
   const [input, setInput] = useState("");
   const abortControllerRef = useRef<AbortController | null>(null);
+  const onSandboxCreatedRef = useRef<
+    ((sandboxId: string, vncUrl: string) => void) | undefined
+  >(undefined);
 
   /**
    * Parse an SSE event from the server
@@ -248,10 +254,7 @@ export function ChatProvider({ children }: ChatProviderProps) {
 
               if (reasoningItems.length > 0) {
                 assistantMessage = reasoningItems
-                  .map((item: AnyMessagePart) =>
-                    "content" in item ? String(item.content) : ""
-                  )
-                  .filter((content: string) => content) // Filter out empty content
+                  .map((item: any) => item.content)
                   .join("\n");
               }
 
@@ -260,23 +263,9 @@ export function ChatProvider({ children }: ChatProviderProps) {
                   msg.id === assistantMessageId
                     ? {
                         ...msg,
-                        content: assistantMessage || "Working...",
+                        content: assistantMessage || "Thinking...",
                         parts,
-                      }
-                    : msg
-                )
-              );
-              break;
-
-            case SSEEventType.REASONING:
-              // Update with reasoning
-              assistantMessage = parsedEvent.content;
-              setMessages((prev) =>
-                prev.map((msg) =>
-                  msg.id === assistantMessageId
-                    ? {
-                        ...msg,
-                        content: assistantMessage,
+                        isLoading: true,
                       }
                     : msg
                 )
@@ -284,11 +273,11 @@ export function ChatProvider({ children }: ChatProviderProps) {
               break;
 
             case SSEEventType.ACTION:
-              // Add an action message to the chat
               if (parsedEvent.action && parsedEvent.callId) {
+                // Add an action message
                 const actionMessage: ActionChatMessage = {
-                  id: `action-${Date.now()}`,
                   role: "action",
+                  id: `action-${Date.now()}`,
                   actionType: parsedEvent.action.type,
                   action: parsedEvent.action,
                   callId: parsedEvent.callId,
@@ -296,25 +285,27 @@ export function ChatProvider({ children }: ChatProviderProps) {
                 };
 
                 setMessages((prev) => [...prev, actionMessage]);
+              }
+              break;
 
-                // Update the action message status after a delay
-                setTimeout(() => {
-                  setMessages((prev) =>
-                    prev.map((msg) =>
-                      msg.id === actionMessage.id
-                        ? {
-                            ...msg,
-                            status: "completed",
-                          }
-                        : msg
-                    )
-                  );
-                }, 2000); // Simulate action completion after 2 seconds
+            case SSEEventType.REASONING:
+              if (typeof parsedEvent.content === "string") {
+                assistantMessage = parsedEvent.content;
+                setMessages((prev) =>
+                  prev.map((msg) =>
+                    msg.id === assistantMessageId
+                      ? {
+                          ...msg,
+                          content: assistantMessage,
+                          isLoading: true,
+                        }
+                      : msg
+                  )
+                );
               }
               break;
 
             case SSEEventType.DONE:
-              // Final update
               parts = parsedEvent.content;
               setMessages((prev) =>
                 prev.map((msg) =>
@@ -333,30 +324,48 @@ export function ChatProvider({ children }: ChatProviderProps) {
 
             case SSEEventType.ERROR:
               setError(parsedEvent.content);
-              toast.error(parsedEvent.content);
-              setMessages((prev) =>
-                prev.map((msg) =>
-                  msg.id === assistantMessageId
-                    ? {
-                        ...msg,
-                        content: `Error: ${parsedEvent.content}`,
-                        isLoading: false,
-                      }
-                    : msg
-                )
-              );
               setIsLoading(false);
+              break;
+
+            case SSEEventType.SANDBOX_CREATED:
+              if (
+                parsedEvent.sandboxId &&
+                parsedEvent.vncUrl &&
+                onSandboxCreatedRef.current
+              ) {
+                onSandboxCreatedRef.current(
+                  parsedEvent.sandboxId,
+                  parsedEvent.vncUrl
+                );
+              }
+              break;
+
+            case SSEEventType.ACTION_COMPLETED:
+              if (parsedEvent.callId) {
+                // Update the action message status to completed
+                setMessages((prev) =>
+                  prev.map((msg) => {
+                    if (
+                      msg.role === "action" &&
+                      "callId" in msg &&
+                      msg.callId === parsedEvent.callId
+                    ) {
+                      return {
+                        ...msg,
+                        status: "completed",
+                      };
+                    }
+                    return msg;
+                  })
+                );
+              }
               break;
           }
         }
       }
-    } catch (e) {
-      const error = e as Error;
-      if (error.name !== "AbortError") {
-        const errorMessage = error.message || "Unknown error occurred";
-        setError(errorMessage);
-        toast.error(errorMessage);
-      }
+    } catch (error) {
+      console.error("Error sending message:", error);
+      setError(error instanceof Error ? error.message : "An error occurred");
       setIsLoading(false);
     }
   };
@@ -418,6 +427,11 @@ export function ChatProvider({ children }: ChatProviderProps) {
     stopGeneration,
     clearMessages,
     handleSubmit,
+    onSandboxCreated: (
+      callback: (sandboxId: string, vncUrl: string) => void
+    ) => {
+      onSandboxCreatedRef.current = callback;
+    },
   };
 
   return <ChatContext.Provider value={value}>{children}</ChatContext.Provider>;

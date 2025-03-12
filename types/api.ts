@@ -53,6 +53,8 @@ export enum SSEEventType {
   REASONING = "reasoning",
   DONE = "done",
   ERROR = "error",
+  SANDBOX_CREATED = "sandbox_created",
+  ACTION_COMPLETED = "action_completed",
 }
 
 /**
@@ -104,6 +106,23 @@ export interface ErrorEvent extends BaseSSEEvent {
 }
 
 /**
+ * Sandbox created event with sandbox details
+ */
+export interface SandboxCreatedEvent extends BaseSSEEvent {
+  type: SSEEventType.SANDBOX_CREATED;
+  sandboxId: string;
+  vncUrl: string;
+}
+
+/**
+ * Action completed event with details about the completed action
+ */
+export interface ActionCompletedEvent extends BaseSSEEvent {
+  type: SSEEventType.ACTION_COMPLETED;
+  callId: string;
+}
+
+/**
  * Union type of all possible SSE events
  */
 export type SSEEvent =
@@ -111,7 +130,9 @@ export type SSEEvent =
   | ActionEvent
   | ReasoningEvent
   | DoneEvent
-  | ErrorEvent;
+  | ErrorEvent
+  | SandboxCreatedEvent
+  | ActionCompletedEvent;
 
 /**
  * Response from action execution

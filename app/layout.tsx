@@ -19,7 +19,7 @@ const ibmPlexMono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Cuse - E2B Computer Use Agent",
+  title: "E2B Computer Use Agent",
   description:
     "AI agent that interacts with a virtual desktop environment through natural language instructions",
   keywords: [

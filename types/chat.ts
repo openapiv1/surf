@@ -105,6 +105,8 @@ export interface ParsedSSEEvent {
   content?: any;
   action?: ResponseComputerToolCall["action"];
   callId?: string;
+  sandboxId?: string;
+  vncUrl?: string;
 }
 
 /**
@@ -112,7 +114,7 @@ export interface ParsedSSEEvent {
  */
 export interface ChatApiRequest {
   messages: { role: MessageRole; content: string }[];
-  sandboxId: string;
+  sandboxId?: string;
   environment?: string;
   resolution: [number, number];
 }
@@ -122,7 +124,7 @@ export interface ChatApiRequest {
  */
 export interface SendMessageOptions {
   content: string;
-  sandboxId: string;
+  sandboxId?: string;
   environment?: string;
   resolution: [number, number];
 }

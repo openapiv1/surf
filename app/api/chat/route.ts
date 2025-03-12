@@ -1,12 +1,12 @@
 import { Sandbox } from "@e2b/desktop";
 import OpenAI from "openai";
-import { ComputerEnvironment } from "@/types/api";
+import { ComputerEnvironment, SSEEventType } from "@/types/api";
 import {
   createStreamingResponse,
   streamComputerInteraction,
 } from "@/lib/streaming";
-
-const TIMEOUT_MS = 600000;
+import { formatSSE } from "@/lib/streaming";
+import { SANDBOX_TIMEOUT_MS } from "@/lib/config";
 
 export const maxDuration = 400;
 
@@ -34,19 +34,35 @@ export async function POST(request: Request) {
     return new Response("OpenAI API key not found", { status: 500 });
   }
 
-  if (!sandboxId) {
-    return new Response("No sandbox ID provided", { status: 400 });
-  }
+  // 2. Create a new sandbox if no sandboxId is provided
+  let desktop: Sandbox | undefined;
+  let activeSandboxId = sandboxId;
+  let vncUrl: string | undefined;
 
-  // 2. Connect to desktop
   try {
-    const desktop = await Sandbox.connect(sandboxId);
+    if (!activeSandboxId) {
+      // Create a new sandbox
+      const newSandbox = await Sandbox.create({
+        resolution,
+        dpi: 96,
+        timeoutMs: SANDBOX_TIMEOUT_MS,
+      });
+
+      await newSandbox.stream.start();
+
+      activeSandboxId = newSandbox.sandboxId;
+      vncUrl = newSandbox.stream.getUrl();
+      desktop = newSandbox;
+    } else {
+      // Connect to existing sandbox
+      desktop = await Sandbox.connect(activeSandboxId);
+    }
 
     if (!desktop) {
       return new Response("Failed to connect to sandbox", { status: 500 });
     }
 
-    desktop.setTimeout(TIMEOUT_MS);
+    desktop.setTimeout(SANDBOX_TIMEOUT_MS);
 
     // 3. Initialize OpenAI client
     const openai = new OpenAI({
@@ -55,16 +71,45 @@ export async function POST(request: Request) {
 
     // 4. Create streaming response using our async generator
     try {
-      const stream = streamComputerInteraction(
-        messages,
-        sandboxId,
-        openai,
-        desktop,
-        environment as ComputerEnvironment,
-        resolution
-      );
+      // If we created a new sandbox, we need to create a custom stream that first sends a SANDBOX_CREATED event
+      if (!sandboxId && activeSandboxId && vncUrl) {
+        const stream = async function* () {
+          // First yield the SANDBOX_CREATED event
+          yield formatSSE({
+            type: SSEEventType.SANDBOX_CREATED,
+            sandboxId: activeSandboxId,
+            vncUrl: vncUrl as string,
+          });
 
-      return createStreamingResponse(stream);
+          // Then yield the regular stream
+          const computerStream = streamComputerInteraction(
+            messages,
+            activeSandboxId,
+            openai,
+            desktop as Sandbox,
+            environment as ComputerEnvironment,
+            resolution
+          );
+
+          for await (const chunk of computerStream) {
+            yield chunk;
+          }
+        };
+
+        return createStreamingResponse(stream());
+      } else {
+        // Regular stream for existing sandbox
+        const stream = streamComputerInteraction(
+          messages,
+          activeSandboxId,
+          openai,
+          desktop,
+          environment as ComputerEnvironment,
+          resolution
+        );
+
+        return createStreamingResponse(stream);
+      }
     } catch (error) {
       console.error("Error from OpenAI:", error);
       if (error instanceof OpenAI.APIError && error?.status === 429) {
