@@ -1,4 +1,4 @@
-# Cuse - E2B Computer Use Agent 
+# CUSE - OpenAI's Computer Use Agent using E2B Desktop
 
 A Next.js application that allows AI to interact with a virtual desktop environment. This project integrates [E2B's desktop sandbox](https://github.com/e2b-dev/desktop) with OpenAI's API to create an AI agent that can perform tasks on a virtual computer through natural language instructions.
 
