@@ -131,8 +131,6 @@ export async function executeAction(
   desktop: Sandbox,
   action: ResponseComputerToolCall["action"]
 ): Promise<ActionResponse | undefined> {
-  console.log("Executing action:", action);
-
   switch (action.type) {
     case "screenshot": {
       const screenshotData = await desktop.screenshot();

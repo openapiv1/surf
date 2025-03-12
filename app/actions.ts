@@ -1,16 +1,14 @@
 "use server";
 
-import { RESOLUTION } from "@/lib/config";
 import { Sandbox } from "@e2b/desktop";
-import { sleep } from "openai/core.mjs";
 
 const TIMEOUT_MS = 300000; // 5 minutes in milliseconds
 
-export async function createSandbox() {
+export async function createSandbox(resolution: [number, number]) {
   try {
     // Create new sandbox instance
     const newSandbox = await Sandbox.create({
-      resolution: RESOLUTION,
+      resolution,
       dpi: 96,
       timeoutMs: TIMEOUT_MS,
     });

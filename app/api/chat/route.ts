@@ -14,7 +14,12 @@ const TIMEOUT_MS = 600000;
  */
 export async function POST(request: Request) {
   // 1. Parse request and validate
-  const { messages, sandboxId, environment = "linux" } = await request.json();
+  const {
+    messages,
+    sandboxId,
+    environment = "linux",
+    resolution,
+  } = await request.json();
 
   const apiKey = process.env.E2B_API_KEY!;
   const openaiApiKey = process.env.OPENAI_API_KEY;
@@ -53,7 +58,8 @@ export async function POST(request: Request) {
         sandboxId,
         openai,
         desktop,
-        environment as ComputerEnvironment
+        environment as ComputerEnvironment,
+        resolution
       );
 
       return createStreamingResponse(stream);

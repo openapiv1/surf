@@ -115,6 +115,7 @@ export function ChatProvider({ children }: ChatProviderProps) {
     content,
     sandboxId,
     environment,
+    resolution,
   }: SendMessageOptions) => {
     if (isLoading) return;
 
@@ -157,6 +158,7 @@ export function ChatProvider({ children }: ChatProviderProps) {
           messages: apiMessages,
           sandboxId,
           environment,
+          resolution,
         }),
         signal: abortControllerRef.current.signal,
       });

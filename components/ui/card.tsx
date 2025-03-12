@@ -2,7 +2,7 @@ import * as React from "react";
 import { cn } from "@/lib/utils";
 import { cva, VariantProps } from "class-variance-authority";
 
-export const cardVariants = cva("", {
+export const cardVariants = cva("rounded-sm", {
   variants: {
     variant: {
       default: "bg-bg text-fg",

@@ -18,7 +18,6 @@ import {
   executeAction,
   sleep,
 } from "@/types/api";
-import { RESOLUTION } from "./config";
 
 /**
  * Formats an SSE event for streaming
@@ -44,7 +43,8 @@ export async function* streamComputerInteraction(
   openai: OpenAI,
   desktop: Sandbox,
   // @ts-ignore
-  environment: ComputerEnvironment = "linux"
+  environment: ComputerEnvironment = "linux",
+  resolution: [number, number]
 ): AsyncGenerator<string> {
   try {
     // Extract user message
@@ -59,8 +59,8 @@ export async function* streamComputerInteraction(
     const computerTool: ComputerTool = {
       // @ts-ignore
       type: "computer_use_preview",
-      display_width: RESOLUTION[0],
-      display_height: RESOLUTION[1],
+      display_width: resolution[0],
+      display_height: resolution[1],
       environment,
     };
 

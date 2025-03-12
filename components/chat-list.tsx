@@ -57,7 +57,7 @@ export function ChatList({
   return (
     <div
       ref={containerRef}
-      className={cn("overflow-y-auto px-6", "space-y-4", className)}
+      className={cn("overflow-y-auto p-4 pb-22", "space-y-4", className)}
     >
       {displayMessages.length !== 0 &&
         displayMessages.map((message) => (

@@ -114,6 +114,7 @@ export interface ChatApiRequest {
   messages: { role: MessageRole; content: string }[];
   sandboxId: string;
   environment?: string;
+  resolution: [number, number];
 }
 
 /**
@@ -123,6 +124,7 @@ export interface SendMessageOptions {
   content: string;
   sandboxId: string;
   environment?: string;
+  resolution: [number, number];
 }
 
 export type MessagePartType = "text" | "code" | "image" | "link";

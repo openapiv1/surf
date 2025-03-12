@@ -14,6 +14,7 @@ interface ChatInputProps {
   onStop: () => void;
   disabled?: boolean;
   placeholder?: string;
+  className?: string;
 }
 
 /**
@@ -27,16 +28,17 @@ export function ChatInput({
   onStop,
   disabled = false,
   placeholder = "Send a message...",
+  className,
 }: ChatInputProps) {
   return (
-    <form onSubmit={onSubmit} className="w-full">
+    <form onSubmit={onSubmit} className={cn(className)}>
       <div className="flex items-center">
         <div className="relative flex-1">
           <input
             className={cn(
-              "w-full h-14 px-4 pr-[100px] bg-bg-100",
-              "text-fg dark:text-fg rounded-sm",
-              "border border-border shadow-md",
+              "w-full h-14 px-4 pr-[100px] bg-bg-300/60 backdrop-blur-sm",
+              "text-fg dark:text-fg rounded-md",
+              "border border-border-200 shadow-lg",
               "font-mono tracking-wide text-sm",
               "outline-none  transition-all duration-200",
               "placeholder:text-fg-300 dark:placeholder:text-fg-300",

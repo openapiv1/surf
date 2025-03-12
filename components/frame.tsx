@@ -12,9 +12,9 @@ interface FrameProps {
 export default function Frame({ children, classNames }: FrameProps) {
   return (
     <div
-      className={cn("relative flex h-fit w-fit pb-3.5", classNames?.wrapper)}
+      className={cn("relative flex h-fit w-fit pb-4.5", classNames?.wrapper)}
     >
-      <div className="absolute inset-x-[8px] top-1 bottom-0 h-auto w-auto rounded-xs border">
+      <div className="absolute inset-x-[16px] top-1 bottom-0 h-auto w-auto rounded-xs border">
         <Scanline />
       </div>
       <div

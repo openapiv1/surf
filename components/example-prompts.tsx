@@ -3,6 +3,7 @@
 import React from "react";
 import { Sparkles, Terminal } from "lucide-react";
 import { Button } from "./ui/button";
+import { cn } from "@/lib/utils";
 
 interface ExamplePromptProps {
   text: string;
@@ -31,6 +32,7 @@ interface ExamplePromptsProps {
   onPromptClick: (prompt: string) => void;
   prompts?: Array<{ text: string; prompt: string }>;
   disabled?: boolean;
+  className?: string;
 }
 
 /**
@@ -53,9 +55,15 @@ export function ExamplePrompts({
     },
   ],
   disabled = false,
+  className,
 }: ExamplePromptsProps) {
   return (
-    <div className="flex flex-col items-center gap-4 mx-auto my-6 w-full max-w-[600px]">
+    <div
+      className={cn(
+        "flex flex-col items-center gap-4 mx-auto my-6 w-full max-w-[600px]",
+        className
+      )}
+    >
       <div className="flex items-center gap-2 text-accent">
         <Terminal className="w-4 h-4" />
         <span className="text-sm font-mono">Try these examples</span>

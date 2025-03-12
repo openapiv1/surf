@@ -30,9 +30,9 @@ import {
 const messageVariants = cva("", {
   variants: {
     role: {
-      user: "bg-accent/20 text-accent-fg border-accent-300",
-      assistant: "bg-bg-200 dark:bg-bg-200 text-fg border-border-200",
-      system: "bg-bg-100 dark:bg-bg-300 text-fg-300 border-border italic",
+      user: "bg-accent/15 text-accent-fg border-accent-300",
+      assistant: "bg-bg-100 text-fg border-border-100",
+      system: "bg-bg-100 text-fg-300 border-border italic",
     },
   },
   defaultVariants: {
@@ -86,7 +86,7 @@ function ActionMessageDisplay({
   return (
     <div className={cn("flex justify-start", className)}>
       <Card
-        className="max-w-[85%] rounded-lg overflow-hidden border border-border-200 bg-bg-100 dark:bg-bg-200"
+        className="max-w-[85%] overflow-hidden border border-border-200 bg-bg-100 dark:bg-bg-200"
         variant="slate"
       >
         <CardContent className="p-3">
@@ -238,7 +238,7 @@ export function ChatMessage({ message, className }: ChatMessageProps) {
     >
       <Card
         className={cn(
-          "max-w-[85%] rounded-lg overflow-hidden border",
+          "max-w-[85%] overflow-hidden border",
           messageVariants({ role })
         )}
         variant="slate"
