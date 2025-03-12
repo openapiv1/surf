@@ -8,6 +8,8 @@ import {
 
 const TIMEOUT_MS = 600000;
 
+export const maxDuration = 400;
+
 /**
  * POST handler for chat API
  * Processes user messages and streams computer interactions as SSE events
