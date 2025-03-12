@@ -28,6 +28,7 @@ import { Button } from "@/components/ui/button";
 import { Loader, AssemblyLoader } from "@/components/loader";
 import Link from "next/link";
 import Logo from "@/components/logo";
+import { RepoBanner } from "@/components/repo-banner";
 
 /**
  * Main page component
@@ -186,13 +187,15 @@ export default function Home() {
   const ThemeToggle = () => (
     <Button
       onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-      variant="ghost"
+      variant="outline"
       size="icon"
+      suppressHydrationWarning
+      className="rounded-full"
     >
       {theme === "dark" ? (
-        <SunIcon className="h-5 w-5" />
+        <SunIcon className="h-5 w-5" suppressHydrationWarning />
       ) : (
-        <MoonIcon className="h-5 w-5" />
+        <MoonIcon className="h-5 w-5" suppressHydrationWarning />
       )}
     </Button>
   );
@@ -276,16 +279,8 @@ export default function Home() {
 
           {/* Desktop controls */}
           <div className="hidden md:flex items-center gap-2">
-            <a
-              href="https://github.com/e2b-dev/computer-use-app"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="p-1 hover:bg-bg-200/50 dark:hover:bg-bg-200/50 rounded-lg transition-colors"
-              title="View on GitHub"
-            >
-              <GithubLogo className="w-5 h-5 text-fg-100" />
-            </a>
             <ThemeToggle />
+            <RepoBanner />
 
             {/* Controls */}
             <AnimatePresence>
@@ -374,16 +369,8 @@ export default function Home() {
               transition={{ duration: 0.2 }}
             >
               <div className="flex items-center gap-2">
-                <a
-                  href="https://github.com/e2b-dev/computer-use-app"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="p-1 hover:bg-bg-200/50 dark:hover:bg-bg-200/50 rounded-lg transition-colors"
-                  title="View on GitHub"
-                >
-                  <GithubLogo className="w-5 h-5 text-fg-100" />
-                </a>
                 <ThemeToggle />
+                <RepoBanner />
               </div>
             </motion.div>
           )}
