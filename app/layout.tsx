@@ -19,8 +19,19 @@ const ibmPlexMono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Computer Use App",
-  description: "Control a remote desktop with AI",
+  title: "Cuse - E2B Computer Use Agent",
+  description:
+    "AI agent that interacts with a virtual desktop environment through natural language instructions",
+  keywords: [
+    "AI",
+    "desktop",
+    "automation",
+    "E2B",
+    "OpenAI",
+    "virtual desktop",
+    "sandbox",
+  ],
+  authors: [{ name: "E2B", url: "https://e2b.dev" }],
 };
 
 export default function RootLayout({
@@ -37,20 +48,6 @@ export default function RootLayout({
         <Providers>
           <ChatProvider>
             <Toaster position="top-center" richColors />
-            {/*             <GridPattern
-              width={50}
-              height={50}
-              x={-1}
-              y={-1}
-              strokeDasharray={"4 2"}
-              className={cn(
-                "[mask-image:radial-gradient(50vw_40vh_at_center,white,transparent)]"
-              )}
-              gradientFrom="var(--accent-100)"
-              gradientVia="hsl(from var(--fg-100) h s l / 0.1)"
-              gradientTo="var(--accent-100)"
-              gradientDegrees={90}
-            /> */}
             {children}
           </ChatProvider>
         </Providers>
