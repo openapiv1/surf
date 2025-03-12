@@ -190,7 +190,6 @@ export default function Home() {
       variant="outline"
       size="icon"
       suppressHydrationWarning
-      className="rounded-full"
     >
       {theme === "dark" ? (
         <SunIcon className="h-5 w-5" suppressHydrationWarning />
