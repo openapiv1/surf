@@ -8,7 +8,7 @@ import {
 import { formatSSE } from "@/lib/streaming";
 import { SANDBOX_TIMEOUT_MS } from "@/lib/config";
 
-export const maxDuration = 400;
+export const maxDuration = 800;
 
 /**
  * POST handler for chat API
