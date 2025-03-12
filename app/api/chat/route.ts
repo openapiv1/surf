@@ -15,6 +15,17 @@ export const maxDuration = 800;
  * Processes user messages and streams computer interactions as SSE events
  */
 export async function POST(request: Request) {
+  // Create an AbortController to handle client disconnection
+  const abortController = new AbortController();
+  const { signal } = abortController;
+
+  // Set up listener for client disconnection
+  request.signal.addEventListener("abort", () => {
+    // Abort our controller when the request is aborted
+    abortController.abort();
+    console.log("Client disconnected, aborting operations");
+  });
+
   // 1. Parse request and validate
   const {
     messages,
@@ -91,8 +102,40 @@ export async function POST(request: Request) {
             resolution
           );
 
-          for await (const chunk of computerStream) {
-            yield chunk;
+          try {
+            for await (const chunk of computerStream) {
+              // Check if aborted before yielding
+              if (signal.aborted) {
+                console.log("Stream aborted, stopping generation");
+
+                // Send a final message to the client
+                yield formatSSE({
+                  type: SSEEventType.DONE,
+                  content: "Generation stopped by user",
+                });
+
+                // Try to cancel any ongoing operation in the sandbox
+                if (desktop) {
+                  try {
+                    await desktop.press("Escape");
+                    console.log(
+                      "Sent escape key to sandbox to cancel current operation"
+                    );
+                  } catch (err) {
+                    console.error("Failed to send escape to sandbox:", err);
+                  }
+                }
+
+                break;
+              }
+              yield chunk;
+            }
+          } catch (error) {
+            if (error instanceof Error && error.name === "AbortError") {
+              console.log("Stream aborted during iteration");
+            } else {
+              throw error;
+            }
           }
         };
 
@@ -108,7 +151,45 @@ export async function POST(request: Request) {
           resolution
         );
 
-        return createStreamingResponse(stream);
+        // Wrap the stream to handle aborts
+        const wrappedStream = async function* () {
+          try {
+            for await (const chunk of stream) {
+              if (signal.aborted) {
+                console.log("Stream aborted, stopping generation");
+
+                // Send a final message to the client
+                yield formatSSE({
+                  type: SSEEventType.DONE,
+                  content: "Generation stopped by user",
+                });
+
+                // Try to cancel any ongoing operation in the sandbox
+                if (desktop) {
+                  try {
+                    await desktop.press("Escape");
+                    console.log(
+                      "Sent escape key to sandbox to cancel current operation"
+                    );
+                  } catch (err) {
+                    console.error("Failed to send escape to sandbox:", err);
+                  }
+                }
+
+                break;
+              }
+              yield chunk;
+            }
+          } catch (error) {
+            if (error instanceof Error && error.name === "AbortError") {
+              console.log("Stream aborted during iteration");
+            } else {
+              throw error;
+            }
+          }
+        };
+
+        return createStreamingResponse(wrappedStream());
       }
     } catch (error) {
       console.error("Error from OpenAI:", error);

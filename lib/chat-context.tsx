@@ -7,11 +7,9 @@ import React, {
   useRef,
   useCallback,
 } from "react";
-import { toast } from "sonner";
 import {
   ChatMessage,
   ChatState,
-  MessageRole,
   ParsedSSEEvent,
   SendMessageOptions,
   AnyMessagePart,
@@ -375,22 +373,31 @@ export function ChatProvider({ children }: ChatProviderProps) {
    */
   const stopGeneration = useCallback(() => {
     if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
-      setIsLoading(false);
+      try {
+        // Abort with a reason to avoid the "signal is aborted without reason" error
+        abortControllerRef.current.abort(
+          new DOMException("Generation stopped by user", "AbortError")
+        );
+        setIsLoading(false);
 
-      // Update the loading message to indicate it was stopped
-      setMessages((prev) =>
-        prev.map((msg) => {
-          if ("isLoading" in msg && msg.isLoading) {
-            return {
-              ...msg,
-              content: msg.content + " (stopped)",
-              isLoading: false,
-            };
-          }
-          return msg;
-        })
-      );
+        // Update the loading message to indicate it was stopped
+        setMessages((prev) =>
+          prev.map((msg) => {
+            if ("isLoading" in msg && msg.isLoading) {
+              return {
+                ...msg,
+                content: msg.content + " (stopped)",
+                isLoading: false,
+              };
+            }
+            return msg;
+          })
+        );
+      } catch (error) {
+        console.error("Error stopping generation:", error);
+        // Still set loading to false even if there's an error
+        setIsLoading(false);
+      }
     }
   }, []);
 

@@ -253,7 +253,7 @@ export default function Home() {
               target="_blank"
             >
               <Logo width={20} height={20} className="sm:w-6 sm:h-6" />
-              <h1 className="whitespace-pre">Computer use Agent by </h1>
+              <h1 className="whitespace-pre">Surf - Computer Agent by </h1>
             </Link>
             <Link
               href="https://e2b.dev"
