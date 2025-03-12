@@ -107,11 +107,9 @@ function ActionMessageDisplay({
           </div>
 
           {/* Call ID (only in development) */}
-          {process.env.NODE_ENV === "development" && (
-            <div className="text-xs font-mono text-fg-400 mt-2">
-              Call ID: {callId}
-            </div>
-          )}
+          <div className="text-xs font-mono text-fg-400 mt-2">
+            Call ID: {callId}
+          </div>
         </CardContent>
       </Card>
     </div>
@@ -270,19 +268,17 @@ export function ChatMessage({ message, className }: ChatMessageProps) {
           )}
 
           {/* Debug information in development */}
-          {process.env.NODE_ENV === "development" &&
-            parts &&
-            parts.length > 0 && (
-              <details className="mt-3 text-xs border-t border-border pt-2">
-                <summary className="cursor-pointer font-mono text-fg-400 flex items-center gap-1">
-                  <Code className="h-3 w-3" />
-                  <span>Show message parts</span>
-                </summary>
-                <pre className="mt-1 p-2 bg-bg-300/50 dark:bg-bg-100/10 rounded overflow-auto max-h-[200px] text-fg-300 font-mono text-xs">
-                  {JSON.stringify(parts, null, 2)}
-                </pre>
-              </details>
-            )}
+          {parts && parts.length > 0 && (
+            <details className="mt-3 text-xs border-t border-border pt-2">
+              <summary className="cursor-pointer font-mono text-fg-400 flex items-center gap-1">
+                <Code className="h-3 w-3" />
+                <span>Show message parts</span>
+              </summary>
+              <pre className="mt-1 p-2 bg-bg-300/50 dark:bg-bg-100/10 rounded overflow-auto max-h-[200px] text-fg-300 font-mono text-xs">
+                {JSON.stringify(parts, null, 2)}
+              </pre>
+            </details>
+          )}
         </CardContent>
       </Card>
     </div>
