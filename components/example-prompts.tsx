@@ -20,7 +20,7 @@ export function ExamplePrompt({ text, onClick, disabled }: ExamplePromptProps) {
       onClick={onClick}
       variant="outline"
       size="lg"
-      className="text-left whitespace-nowrap"
+      className="text-left whitespace-normal text-sm sm:text-base h-auto py-2 px-3 sm:px-4"
       disabled={disabled}
     >
       {text}
@@ -60,7 +60,7 @@ export function ExamplePrompts({
   return (
     <div
       className={cn(
-        "flex flex-col items-center gap-4 mx-auto my-6 w-full max-w-[600px]",
+        "flex flex-col items-center gap-3 sm:gap-4 mx-auto my-4 sm:my-6 w-full max-w-[600px]",
         className
       )}
     >
@@ -68,7 +68,7 @@ export function ExamplePrompts({
         <Terminal className="w-4 h-4" />
         <span className="text-sm font-mono">Try these examples</span>
       </div>
-      <div className="flex gap-2 justify-center w-full overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-[#EBEBEB] dark:scrollbar-thumb-[#333333] scrollbar-track-transparent">
+      <div className="flex flex-wrap gap-2 justify-center w-full px-2 sm:px-0 pb-2 overflow-x-auto scrollbar-thin scrollbar-thumb-[#EBEBEB] dark:scrollbar-thumb-[#333333] scrollbar-track-transparent">
         {prompts.map((item, index) => (
           <ExamplePrompt
             key={index}

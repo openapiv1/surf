@@ -1,7 +1,15 @@
 "use client";
 
 import { useRef, useState, useEffect } from "react";
-import { MoonIcon, SunIcon, Timer, Power, PackageOpen } from "lucide-react";
+import {
+  MoonIcon,
+  SunIcon,
+  Timer,
+  Power,
+  PackageOpen,
+  Menu,
+  X,
+} from "lucide-react";
 import { useTheme } from "next-themes";
 import { GithubLogo } from "@phosphor-icons/react";
 import { toast } from "sonner";
@@ -32,6 +40,7 @@ export default function Home() {
   const [timeRemaining, setTimeRemaining] = useState<number>(300); // 5 minutes in seconds
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const iFrameWrapperRef = useRef<HTMLDivElement>(null);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // Get chat state and functions from context
   const {
@@ -51,10 +60,17 @@ export default function Home() {
   const startSandbox = async () => {
     setIsLoading(true);
     try {
-      const { sandboxId, vncUrl } = await createSandbox([
-        iFrameWrapperRef.current?.clientWidth || 1920,
-        iFrameWrapperRef.current?.clientHeight || 1080,
-      ]);
+      // Calculate appropriate resolution based on screen size
+      const width =
+        iFrameWrapperRef.current?.clientWidth ||
+        (window.innerWidth < 768 ? window.innerWidth - 32 : 1024);
+      const height =
+        iFrameWrapperRef.current?.clientHeight ||
+        (window.innerWidth < 768
+          ? Math.min(window.innerHeight * 0.4, 400)
+          : 768);
+
+      const { sandboxId, vncUrl } = await createSandbox([width, height]);
       setSandboxId(sandboxId);
       setVncUrl(vncUrl);
       setTimeRemaining(300);
@@ -112,14 +128,21 @@ export default function Home() {
   const onSubmit = (e: React.FormEvent) => {
     const content = handleSubmit(e);
     if (content && sandboxId) {
+      // Calculate appropriate resolution based on current container size
+      const width =
+        iFrameWrapperRef.current?.clientWidth ||
+        (window.innerWidth < 768 ? window.innerWidth - 32 : 1024);
+      const height =
+        iFrameWrapperRef.current?.clientHeight ||
+        (window.innerWidth < 768
+          ? Math.min(window.innerHeight * 0.4, 400)
+          : 768);
+
       sendMessage({
         content,
         sandboxId,
         environment: "linux", // Default to linux environment
-        resolution: [
-          iFrameWrapperRef.current?.clientWidth || 1920,
-          iFrameWrapperRef.current?.clientHeight || 1080,
-        ],
+        resolution: [width, height],
       });
     }
   };
@@ -132,14 +155,20 @@ export default function Home() {
       toast.error("Please start an instance first");
       return;
     }
+
+    // Calculate appropriate resolution based on current container size
+    const width =
+      iFrameWrapperRef.current?.clientWidth ||
+      (window.innerWidth < 768 ? window.innerWidth - 32 : 1024);
+    const height =
+      iFrameWrapperRef.current?.clientHeight ||
+      (window.innerWidth < 768 ? Math.min(window.innerHeight * 0.4, 400) : 768);
+
     sendMessage({
       content: prompt,
       sandboxId,
       environment: "linux",
-      resolution: [
-        iFrameWrapperRef.current?.clientWidth || 1920,
-        iFrameWrapperRef.current?.clientHeight || 1080,
-      ],
+      resolution: [width, height],
     });
   };
 
@@ -198,7 +227,7 @@ export default function Home() {
   }, [timeRemaining, sandboxId, stopGeneration, clearMessages]);
 
   return (
-    <div className="w-full h-dvh overflow-hidden p-8 pb-10">
+    <div className="w-full h-dvh overflow-hidden p-2 sm:p-4 md:p-8 md:pb-10">
       {/* Windows XP-like Container */}
       <Frame
         classNames={{
@@ -207,11 +236,18 @@ export default function Home() {
         }}
       >
         {/* Navbar (Windows XP Title Bar) */}
-        <div className="border-b w-full px-3 py-2 flex items-center justify-between h-auto">
-          <div className="flex flex-1 items-center text-lg">
-            <Link href="/" className="flex items-center gap-2" target="_blank">
-              <Logo width={24} height={24} />
-              <h1 className="whitespace-pre">Computer Use Agent by </h1>
+        <div className="border-b w-full px-2 sm:px-3 py-2 flex items-center justify-between h-auto">
+          <div className="flex flex-1 items-center text-base sm:text-lg truncate">
+            <Link
+              href="/"
+              className="flex items-center gap-1 sm:gap-2"
+              target="_blank"
+            >
+              <Logo width={20} height={20} className="sm:w-6 sm:h-6" />
+              <h1 className="whitespace-pre hidden sm:inline">
+                Computer Use Agent by{" "}
+              </h1>
+              <h1 className="whitespace-pre sm:hidden">Cuse by </h1>
             </Link>
             <Link
               href="https://e2b.dev"
@@ -221,7 +257,25 @@ export default function Home() {
               E2B
             </Link>
           </div>
-          <div className="flex items-center gap-2">
+
+          {/* Mobile menu button */}
+          <div className="md:hidden">
+            <Button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              variant="ghost"
+              size="icon"
+              className="mr-1"
+            >
+              {mobileMenuOpen ? (
+                <X className="h-5 w-5" />
+              ) : (
+                <Menu className="h-5 w-5" />
+              )}
+            </Button>
+          </div>
+
+          {/* Desktop controls */}
+          <div className="hidden md:flex items-center gap-2">
             <a
               href="https://github.com/e2b-dev/computer-use-app"
               target="_blank"
@@ -269,13 +323,78 @@ export default function Home() {
               )}
             </AnimatePresence>
           </div>
+
+          {/* Mobile controls (always visible) */}
+          <div className="md:hidden flex items-center">
+            <AnimatePresence>
+              {sandboxId && (
+                <motion.div
+                  className="flex items-center gap-1"
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <Button
+                    onClick={handleIncreaseTimeout}
+                    variant="muted"
+                    size="sm"
+                    title="Increase Time"
+                    className="px-1.5"
+                  >
+                    <Timer className="h-3 w-3" />
+                    <span className="text-xs font-medium ml-1">
+                      {Math.floor(timeRemaining / 60)}:
+                      {(timeRemaining % 60).toString().padStart(2, "0")}
+                    </span>
+                  </Button>
+
+                  <Button
+                    onClick={stopSandbox}
+                    variant="error"
+                    size="sm"
+                    className="text-xs px-1.5"
+                  >
+                    <Power className="w-3 h-3" />
+                  </Button>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
         </div>
 
-        <div className="flex flex-1 overflow-hidden">
+        {/* Mobile menu */}
+        <AnimatePresence>
+          {mobileMenuOpen && (
+            <motion.div
+              className="md:hidden border-b p-2 flex items-center justify-between"
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.2 }}
+            >
+              <div className="flex items-center gap-2">
+                <a
+                  href="https://github.com/e2b-dev/computer-use-app"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="p-1 hover:bg-bg-200/50 dark:hover:bg-bg-200/50 rounded-lg transition-colors"
+                  title="View on GitHub"
+                >
+                  <GithubLogo className="w-5 h-5 text-fg-100" />
+                </a>
+                <ThemeToggle />
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Main content area - flex column on mobile, row on desktop */}
+        <div className="flex flex-col md:flex-row flex-1 overflow-hidden">
           {/* Desktop Stream (Windows XP Content Area) */}
           <div
             ref={iFrameWrapperRef}
-            className="relative flex-1 w-full overflow-hidden"
+            className="relative w-full md:flex-1 h-[40vh] md:h-auto overflow-hidden"
           >
             {isLoading ? (
               <div className="absolute inset-0 flex flex-col items-center justify-center gap-4">
@@ -314,31 +433,9 @@ export default function Home() {
               </div>
             )}
           </div>
-          {/* Chat Section (Bottom) */}
-          <div className="max-w-xl flex-1 flex flex-col relative border-l overflow-hidden">
-            {/* Chat Controls */}
-            {/*  <div className="px-4 py-2 flex justify-end">
-            <AnimatePresence>
-              {messages.length > 0 && !chatLoading && (
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.8 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.8 }}
-                  transition={{ duration: 0.15 }}
-                >
-                  <Button
-                    onClick={handleClearChat}
-                    variant="ghost"
-                    size="iconSm"
-                    title="Clear Chat"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div> */}
 
+          {/* Chat Section - Bottom on mobile, right on desktop */}
+          <div className="flex-1 flex flex-col relative border-t md:border-t-0 md:border-l overflow-hidden h-[60vh] md:h-auto md:max-w-xl">
             {/* Chat Messages */}
             <ChatList
               className="flex-1"
@@ -351,7 +448,7 @@ export default function Home() {
               <ExamplePrompts
                 onPromptClick={handleExampleClick}
                 disabled={!sandboxId}
-                className="pb-16"
+                className="-translate-y-16"
               />
             )}
 
