@@ -421,7 +421,7 @@ export default function Home() {
                 <AssemblyLoader
                   className="mt-4 text-fg-300"
                   gridWidth={8}
-                  gridHeight={3}
+                  gridHeight={4}
                   filledChar="■"
                   emptyChar="□"
                 />
