@@ -22,8 +22,8 @@ The application uses Server-Sent Events (SSE) to stream AI responses and actions
 The application consists of several key components:
 
 1. **Frontend UI (Next.js)**: Provides the user interface with a virtual desktop view and chat interface
-2. **E2B Desktop Sandbox**: Creates and manages virtual desktop environments
-3. **OpenAI API Integration**: Processes user instructions and generates actions for the AI agent
+2. [**E2B Desktop Sandbox**](https://github.com/e2b-dev/desktop): Creates and manages virtual desktop environments
+3. [**OpenAI Computer Use**](https://platform.openai.com/docs/guides/tools-computer-use): Processes user instructions and generates actions for the AI agent
 4. **Streaming API**: Handles real-time communication between the frontend and backend
 
 ### Core Flow
