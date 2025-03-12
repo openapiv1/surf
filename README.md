@@ -1,4 +1,4 @@
-# CUSE - OpenAI's Computer Use Agent using E2B Desktop
+# OpenAI's Computer Use Agent using E2B Desktop
 
 ![CUSE Agent Demo](./assets/preview.png)
 
