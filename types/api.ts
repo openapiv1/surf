@@ -188,25 +188,7 @@ export async function executeAction(
       break;
     }
     case "keypress": {
-      // Key mapping from CUA to E2B format
-      const cua_e2b_key_mapping: Record<string, string> = {
-        ENTER: "Return",
-        LEFT: "Left",
-        RIGHT: "Right",
-        UP: "Up",
-        DOWN: "Down",
-        ESC: "Escape",
-        SPACE: "space",
-        BACKSPACE: "BackSpace",
-        TAB: "Tab",
-      };
-
-      // Handle multiple keys if needed
-      for (const key of action.keys) {
-        // Convert key if it exists in the mapping, otherwise use as is
-        const mappedKey = cua_e2b_key_mapping[key] || key;
-        await desktop.press(mappedKey);
-      }
+      await desktop.press(action.keys);
       break;
     }
     case "move": {
