@@ -34,7 +34,7 @@ export async function POST(request: Request) {
     resolution,
   } = await request.json();
 
-  const apiKey = process.env.E2B_API_KEY!;
+  const apiKey = process.env.E2B_API_KEY;
   const openaiApiKey = process.env.OPENAI_API_KEY;
 
   if (!apiKey) {
