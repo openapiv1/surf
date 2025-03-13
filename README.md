@@ -1,4 +1,4 @@
-# Surf - OpenAI's Computer Use Agent using E2B Desktop
+# 🏄 Surf - OpenAI's Computer Use Agent using E2B Desktop
 
 ![CUSE Agent Demo](./assets/preview.png)
 
