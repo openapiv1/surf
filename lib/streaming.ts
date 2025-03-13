@@ -19,6 +19,11 @@ import {
   executeAction,
   sleep,
 } from "@/types/api";
+import { Message } from "openai/resources/beta/threads/messages.mjs";
+import {
+  ResponseInput,
+  ResponseInputItem,
+} from "openai/resources/responses/responses.mjs";
 
 /**
  * Formats an SSE event for streaming
@@ -39,7 +44,7 @@ export function formatSSE(event: SSEEvent): string {
  * @returns Async generator yielding SSE events
  */
 export async function* streamComputerInteraction(
-  messages: { content: string }[],
+  messages: { role: string; content: string }[],
   sandboxId: string,
   openai: OpenAI,
   desktop: Sandbox,
@@ -48,10 +53,6 @@ export async function* streamComputerInteraction(
   resolution: [number, number]
 ): AsyncGenerator<string> {
   try {
-    // Extract user message
-    const userMessage =
-      messages[messages.length - 1]?.content || "Help me use this computer";
-
     // Take initial screenshot
     const screenshotData = await desktop.screenshot();
     const screenshotBase64 = Buffer.from(screenshotData).toString("base64");
@@ -65,17 +66,11 @@ export async function* streamComputerInteraction(
       environment,
     };
 
-    // Initial user message
-    const initialMessage: UserMessage = {
-      role: "user",
-      content: userMessage,
-    };
-
     // Make initial request to OpenAI
     let response = await openai.responses.create({
       model: "computer-use-preview",
       tools: [computerTool],
-      input: [initialMessage],
+      input: messages as ResponseInput,
       truncation: "auto",
     });
 
