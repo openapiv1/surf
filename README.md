@@ -31,7 +31,7 @@ The application consists of several key components:
 ### Core Flow
 
 1. User starts a new sandbox instance
-2. E2B creates a virtual desktop and provides a VNC URL for streaming
+2. E2B creates a virtual desktop and provides a URL for streaming
 3. User sends instructions via the chat interface
 4. Backend processes the instructions using OpenAI's API
 5. AI generates actions (clicks, typing, etc.) to perform on the virtual desktop
