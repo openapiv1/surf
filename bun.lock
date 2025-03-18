@@ -12,7 +12,7 @@
         "@ai-sdk/ui-utils": "1.1.10",
         "@ai-sdk/xai": "1.1.10",
         "@anthropic-ai/sdk": "^0.33.1",
-        "@e2b/desktop": "^1.6.1",
+        "@e2b/desktop": "^1.6.2",
         "@gradio/client": "^1.10.0",
         "@phosphor-icons/react": "^2.1.7",
         "@radix-ui/react-icons": "^1.3.2",
@@ -95,7 +95,7 @@
 
     "@connectrpc/connect-web": ["@connectrpc/connect-web@2.0.0-rc.3", "", { "peerDependencies": { "@bufbuild/protobuf": "^2.2.0", "@connectrpc/connect": "2.0.0-rc.3" } }, "sha512-w88P8Lsn5CCsA7MFRl2e6oLY4J/5toiNtJns/YJrlyQaWOy3RO8pDgkz+iIkG98RPMhj2thuBvsd3Cn4DKKCkw=="],
 
-    "@e2b/desktop": ["@e2b/desktop@1.6.1", "", { "dependencies": { "e2b": "^1.0.7" } }, "sha512-sJvZ+pDeLICRO5xDhOzJkwu7b8H3phPO9QdNbemYMmZhgCUOR+skk0tgrDRpy+XHfPD94ACQXk7ah2EEa9g+ZQ=="],
+    "@e2b/desktop": ["@e2b/desktop@1.6.2", "", { "dependencies": { "e2b": "^1.0.7" } }, "sha512-YBqQA+1W/meo4iv2mtSuK0a6tUwBXHCmx9sSNP3ffUJ6F5fnpuMXnpRkODN/hEL93szLfIZPY+Bo3rGBQVThZA=="],
 
     "@emnapi/runtime": ["@emnapi/runtime@1.3.1", "", { "dependencies": { "tslib": "^2.4.0" } }, "sha512-kEBmG8KyqtxJZv+ygbEim+KCGtIq1fC22Ms3S4ziXmYKm8uyoLX0MHONVKwp+9opg390VaKRNt4a7A9NwmpNhw=="],
 
