@@ -165,21 +165,17 @@ export async function executeAction(
       };
     }
     case "double_click": {
-      await desktop.moveMouse(action.x, action.y);
-      await desktop.doubleClick();
+      await desktop.doubleClick(action.x, action.y);
       break;
     }
     case "click": {
-      // Move mouse to the specified position
-      await desktop.moveMouse(action.x, action.y);
-
       // Perform the appropriate click based on the button
       if (action.button === "left") {
-        await desktop.leftClick();
+        await desktop.leftClick(action.x, action.y);
       } else if (action.button === "right") {
-        await desktop.rightClick();
+        await desktop.rightClick(action.x, action.y);
       } else if (action.button === "wheel") {
-        await desktop.middleClick();
+        await desktop.middleClick(action.x, action.y);
       }
       break;
     }
@@ -212,10 +208,10 @@ export async function executeAction(
     case "drag": {
       // Handle drag action with path
       if (action.path.length >= 2) {
-        // Move to start position
+        // Move to last position
         await desktop.drag(
           [action.path[0].x, action.path[0].y],
-          [action.path[1].x, action.path[1].y]
+          [action.path[action.path.length - 1].x, action.path[action.path.length - 1].y]
         );
       }
       break;
