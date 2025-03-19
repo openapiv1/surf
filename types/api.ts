@@ -1,6 +1,7 @@
 /**
  * Type definitions for Surf Computer API and SSE events
  */
+import { ComputerAction } from "@/lib/streaming/anthropic";
 import { ResponseComputerToolCall } from "openai/resources/responses/responses.mjs";
 
 /**
@@ -29,20 +30,13 @@ export interface BaseSSEEvent {
 }
 
 /**
- * Update event with latest AI response
- */
-export interface UpdateEvent extends BaseSSEEvent {
-  type: SSEEventType.UPDATE;
-  content: any; // OpenAI response output
-}
-
-/**
  * Action event with details about computer action being performed
  */
-export interface ActionEvent extends BaseSSEEvent {
+export interface ActionEvent<T extends ComputerModel> extends BaseSSEEvent {
   type: SSEEventType.ACTION;
-  action: ResponseComputerToolCall["action"];
-  callId: string;
+  action: T extends "openai"
+    ? ResponseComputerToolCall["action"]
+    : ComputerAction;
 }
 
 /**
@@ -58,7 +52,7 @@ export interface ReasoningEvent extends BaseSSEEvent {
  */
 export interface DoneEvent extends BaseSSEEvent {
   type: SSEEventType.DONE;
-  content: any; // Final OpenAI response output
+  content?: string; // Final OpenAI response output
 }
 
 /**
@@ -83,15 +77,13 @@ export interface SandboxCreatedEvent extends BaseSSEEvent {
  */
 export interface ActionCompletedEvent extends BaseSSEEvent {
   type: SSEEventType.ACTION_COMPLETED;
-  callId: string;
 }
 
 /**
  * Union type of all possible SSE events
  */
-export type SSEEvent =
-  | UpdateEvent
-  | ActionEvent
+export type SSEEvent<T extends ComputerModel = ComputerModel> =
+  | ActionEvent<T>
   | ReasoningEvent
   | DoneEvent
   | ErrorEvent

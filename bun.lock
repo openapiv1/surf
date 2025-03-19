@@ -11,7 +11,7 @@
         "@ai-sdk/openai": "1.0.10",
         "@ai-sdk/ui-utils": "1.1.10",
         "@ai-sdk/xai": "1.1.10",
-        "@anthropic-ai/sdk": "^0.33.1",
+        "@anthropic-ai/sdk": "^0.39.0",
         "@e2b/desktop": "^1.6.2",
         "@gradio/client": "^1.10.0",
         "@phosphor-icons/react": "^2.1.7",
@@ -22,6 +22,7 @@
         "@vercel/analytics": "^1.5.0",
         "@vercel/kv": "^3.0.0",
         "ai": "4.1.25",
+        "ansis": "^3.17.0",
         "class-variance-authority": "^0.7.1",
         "clsx": "^2.1.1",
         "e2b": "^1.0.7",
@@ -80,7 +81,7 @@
 
     "@alloc/quick-lru": ["@alloc/quick-lru@5.2.0", "", {}, "sha512-UrcABB+4bUrFABwbluTIBErXwvbsU/V7TZWfmbgJfbkwiBuziS9gxdODUyuiecfdGQ85jglMW6juS3+z5TsKLw=="],
 
-    "@anthropic-ai/sdk": ["@anthropic-ai/sdk@0.33.1", "", { "dependencies": { "@types/node": "^18.11.18", "@types/node-fetch": "^2.6.4", "abort-controller": "^3.0.0", "agentkeepalive": "^4.2.1", "form-data-encoder": "1.7.2", "formdata-node": "^4.3.2", "node-fetch": "^2.6.7" } }, "sha512-VrlbxiAdVRGuKP2UQlCnsShDHJKWepzvfRCkZMpU+oaUdKLpOfmylLMRojGrAgebV+kDtPjewCVP0laHXg+vsA=="],
+    "@anthropic-ai/sdk": ["@anthropic-ai/sdk@0.39.0", "", { "dependencies": { "@types/node": "^18.11.18", "@types/node-fetch": "^2.6.4", "abort-controller": "^3.0.0", "agentkeepalive": "^4.2.1", "form-data-encoder": "1.7.2", "formdata-node": "^4.3.2", "node-fetch": "^2.6.7" } }, "sha512-eMyDIPRZbt1CCLErRCi3exlAvNkBtRe+kW5vvJyef93PmNr/clstYgHhtvmkxN82nlKgzyGPCyGxrm0JQ1ZIdg=="],
 
     "@babel/runtime": ["@babel/runtime@7.26.10", "", { "dependencies": { "regenerator-runtime": "^0.14.0" } }, "sha512-2WJMeRQPHKSPemqk/awGrAiuFfzBmOIPXKizAsVhWH9YJqLZ0H+HS4c8loHGgW6utJ3E/ejXQUsiGaQy2NZ9Fw=="],
 
@@ -399,6 +400,8 @@
     "ansi-regex": ["ansi-regex@5.0.1", "", {}, "sha512-quJQXlTSUGL2LH9SUXo8VwsY4soanhgo6LNSm84E1LBcE8s3O0wpdiRzyR9z/ZZJMlMWv37qOOb9pdJlMUEKFQ=="],
 
     "ansi-styles": ["ansi-styles@4.3.0", "", { "dependencies": { "color-convert": "^2.0.1" } }, "sha512-zbB9rCJAT1rbjiVDb2hqKFHNYLxgtk8NURxZ3IZwD3F6NtxbXZQCnnSi1Lkx+IDohdPlFp222wVALIheZJQSEg=="],
+
+    "ansis": ["ansis@3.17.0", "", {}, "sha512-0qWUglt9JEqLFr3w1I1pbrChn1grhaiAR2ocX1PP/flRmxgtwTzPFFFnfIlD6aMOLQZgSuCRlidD70lvx8yhzg=="],
 
     "argparse": ["argparse@2.0.1", "", {}, "sha512-8+9WqebbFzpX9OR+Wa6O29asIogeRMzcGtAINdpMHHyAg10f05aSFVBbcEqGf/PXw1EjAZ+q2/bEBg3DvurK3Q=="],
 

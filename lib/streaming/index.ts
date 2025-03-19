@@ -1,5 +1,7 @@
 import { Sandbox } from "@e2b/desktop";
 import { SSEEvent, ActionResponse } from "@/types/api";
+import { ResolutionScaler } from "./resolution";
+import { logDebug } from "../logger";
 
 export function formatSSE(event: SSEEvent): string {
   return `data: ${JSON.stringify(event)}\n\n`;
@@ -7,13 +9,13 @@ export function formatSSE(event: SSEEvent): string {
 
 export interface ComputerInteractionStreamerFacadeStreamProps {
   signal: AbortSignal;
-  messages: { role: string; content: string }[];
+  messages: { role: "user" | "assistant"; content: string }[];
 }
 
 export abstract class ComputerInteractionStreamerFacade {
   abstract instructions: string;
   abstract desktop: Sandbox;
-  abstract resolution: [number, number];
+  abstract resolutionScaler: ResolutionScaler;
 
   abstract stream(
     props: ComputerInteractionStreamerFacadeStreamProps

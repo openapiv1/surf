@@ -1,31 +1,31 @@
 import { Sandbox } from "@e2b/desktop";
-import OpenAI from "openai";
 import { ComputerModel, SSEEvent, SSEEventType } from "@/types/api";
 import {
   ComputerInteractionStreamerFacade,
   createStreamingResponse,
-  formatSSE,
 } from "@/lib/streaming";
 import { SANDBOX_TIMEOUT_MS } from "@/lib/config";
-import { OpenAIComputerStreamer } from "@/lib/streaming/openai-streamer";
-// Uncomment when available
-// import { AnthropicComputerStreamer } from "@/lib/streaming/anthropic-streamer";
+import { OpenAIComputerStreamer } from "@/lib/streaming/openai";
+import { AnthropicComputerStreamer } from "@/lib/streaming/anthropic";
+import { logError } from "@/lib/logger";
+import { ResolutionScaler } from "@/lib/streaming/resolution";
 
 export const maxDuration = 800;
 
-export class StreamerFactory {
+class StreamerFactory {
   static getStreamer(
     model: ComputerModel,
     desktop: Sandbox,
     resolution: [number, number]
   ): ComputerInteractionStreamerFacade {
+    const resolutionScaler = new ResolutionScaler(desktop, resolution);
+
     switch (model) {
-      // Uncomment when implementation is available
-      // case "anthropic":
-      //   return new AnthropicComputerStreamer(desktop, resolution);
+      case "anthropic":
+        return new AnthropicComputerStreamer(desktop, resolutionScaler);
       case "openai":
       default:
-        return new OpenAIComputerStreamer(desktop, resolution, new OpenAI());
+        return new OpenAIComputerStreamer(desktop, resolutionScaler);
     }
   }
 }
@@ -36,7 +36,6 @@ export async function POST(request: Request) {
 
   request.signal.addEventListener("abort", () => {
     abortController.abort();
-    console.log("Client disconnected, aborting operations");
   });
 
   const {
@@ -87,7 +86,7 @@ export async function POST(request: Request) {
       );
 
       if (!sandboxId && activeSandboxId && vncUrl) {
-        async function* stream(): AsyncGenerator<SSEEvent> {
+        async function* stream(): AsyncGenerator<SSEEvent<typeof model>> {
           yield {
             type: SSEEventType.SANDBOX_CREATED,
             sandboxId: activeSandboxId,
@@ -102,14 +101,7 @@ export async function POST(request: Request) {
         return createStreamingResponse(streamer.stream({ messages, signal }));
       }
     } catch (error) {
-      console.error("Error from streaming service:", error);
-
-      if (error instanceof OpenAI.APIError && error?.status === 429) {
-        return new Response(
-          "Rate limit reached. Please wait a few seconds and try again.",
-          { status: 429 }
-        );
-      }
+      logError("Error from streaming service:", error);
 
       return new Response(
         "An error occurred with the AI service. Please try again.",
@@ -117,7 +109,7 @@ export async function POST(request: Request) {
       );
     }
   } catch (error) {
-    console.error("Error connecting to sandbox:", error);
+    logError("Error connecting to sandbox:", error);
     return new Response("Failed to connect to sandbox", { status: 500 });
   }
 }

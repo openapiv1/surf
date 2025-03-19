@@ -2,32 +2,8 @@
  * Type definitions for chat messages and related functionality
  */
 import { ResponseComputerToolCall } from "openai/resources/responses/responses.mjs";
-import { SSEEventType } from "./api";
-
-/**
- * Represents a message part from the AI response
- */
-export interface MessagePart {
-  type: string;
-  [key: string]: any;
-}
-
-/**
- * Represents a reasoning message part
- */
-export interface ReasoningPart extends MessagePart {
-  type: "message";
-  content: string;
-}
-
-/**
- * Represents a computer call message part
- */
-export interface ComputerCallPart extends MessagePart {
-  type: "computer_call";
-  call_id: string;
-  action: ResponseComputerToolCall["action"];
-}
+import { ActionEvent, ComputerModel, SSEEventType } from "./api";
+import { ComputerAction } from "@/lib/streaming/anthropic";
 
 /**
  * Role of a chat message
@@ -56,8 +32,6 @@ export interface UserChatMessage extends BaseChatMessage {
 export interface AssistantChatMessage extends BaseChatMessage {
   role: "assistant";
   content: string;
-  parts?: AnyMessagePart[];
-  isLoading?: boolean;
 }
 
 /**
@@ -66,27 +40,29 @@ export interface AssistantChatMessage extends BaseChatMessage {
 export interface SystemChatMessage extends BaseChatMessage {
   role: "system";
   content: string;
+  isError?: boolean;
 }
 
 /**
  * Action message in the chat
  */
-export interface ActionChatMessage extends BaseChatMessage {
+export interface ActionChatMessage<T extends ComputerModel = ComputerModel>
+  extends BaseChatMessage {
   role: "action";
-  actionType: string;
-  action: ResponseComputerToolCall["action"];
-  callId: string;
+  action: T extends "openai"
+    ? ResponseComputerToolCall["action"]
+    : ComputerAction;
   status?: "pending" | "completed" | "failed";
 }
 
 /**
  * Union type for all chat messages
  */
-export type ChatMessage =
+export type ChatMessage<T extends ComputerModel = "openai"> =
   | UserChatMessage
   | AssistantChatMessage
   | SystemChatMessage
-  | ActionChatMessage;
+  | ActionChatMessage<T>;
 
 /**
  * Chat state interface
@@ -100,10 +76,10 @@ export interface ChatState {
 /**
  * Parsed SSE event from the server
  */
-export interface ParsedSSEEvent {
+export interface ParsedSSEEvent<T extends ComputerModel> {
   type: SSEEventType;
   content?: any;
-  action?: ResponseComputerToolCall["action"];
+  action?: ActionEvent<T>["action"];
   callId?: string;
   sandboxId?: string;
   vncUrl?: string;
@@ -117,6 +93,7 @@ export interface ChatApiRequest {
   sandboxId?: string;
   environment?: string;
   resolution: [number, number];
+  model?: ComputerModel;
 }
 
 /**
@@ -127,39 +104,5 @@ export interface SendMessageOptions {
   sandboxId?: string;
   environment?: string;
   resolution: [number, number];
+  model?: ComputerModel;
 }
-
-export type MessagePartType = "text" | "code" | "image" | "link";
-
-export interface BaseMessagePart {
-  type: MessagePartType;
-}
-
-export interface TextMessagePart extends BaseMessagePart {
-  type: "text";
-  text: string;
-}
-
-export interface CodeMessagePart extends BaseMessagePart {
-  type: "code";
-  code: string;
-  language?: string;
-}
-
-export interface ImageMessagePart extends BaseMessagePart {
-  type: "image";
-  url: string;
-  alt?: string;
-}
-
-export interface LinkMessagePart extends BaseMessagePart {
-  type: "link";
-  url: string;
-  title?: string;
-}
-
-export type AnyMessagePart =
-  | TextMessagePart
-  | CodeMessagePart
-  | ImageMessagePart
-  | LinkMessagePart;

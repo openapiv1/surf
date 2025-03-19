@@ -460,11 +460,7 @@ export default function Home() {
           {/* Chat Section - Bottom on mobile, right on desktop */}
           <div className="flex-1 flex flex-col relative border-t md:border-t-0 md:border-l overflow-hidden h-[60vh] md:h-auto md:max-w-xl">
             {/* Chat Messages */}
-            <ChatList
-              className="flex-1"
-              messages={messages}
-              groupActions={true}
-            />
+            <ChatList className="flex-1" messages={messages} />
 
             {/* Example Prompts */}
             {messages.length === 0 && (

@@ -1,6 +1,6 @@
 import { Sandbox } from "@e2b/desktop";
 import OpenAI from "openai";
-import { SSEEventType, SSEEvent } from "@/types/api";
+import { SSEEventType, SSEEvent, sleep } from "@/types/api";
 import {
   ResponseComputerToolCall,
   ResponseInput,
@@ -12,6 +12,8 @@ import {
   ComputerInteractionStreamerFacadeStreamProps,
 } from "@/lib/streaming";
 import { ActionResponse } from "@/types/api";
+import { logDebug, logWarning } from "../logger";
+import { ResolutionScaler } from "./resolution";
 
 const INSTRUCTIONS = `
 You are Surf, a helpful assistant that can use a computer to help the user with their tasks.
@@ -43,6 +45,9 @@ When working on complex tasks, always continue to completion without stopping to
 instructions. Break down complex tasks into steps and execute them fully without pausing. If a task requires multiple
 commands or actions, perform them all in sequence without waiting for the user to tell you to continue. This provides
 a smoother experience for the user.
+
+IMPORTANT: NEVER use the screenshot tool. You automatically receive a screenshot after each action, so there is no need
+to request screenshots manually. Using the screenshot tool is redundant and will slow down the interaction.
 `;
 
 export class OpenAIComputerStreamer
@@ -50,17 +55,14 @@ export class OpenAIComputerStreamer
 {
   public instructions: string;
   public desktop: Sandbox;
-  public resolution: [number, number];
+  public resolutionScaler: ResolutionScaler;
+
   private openai: OpenAI;
 
-  constructor(
-    desktop: Sandbox,
-    resolution: [number, number],
-    openaiClient?: OpenAI
-  ) {
+  constructor(desktop: Sandbox, resolutionScaler: ResolutionScaler) {
     this.desktop = desktop;
-    this.resolution = resolution;
-    this.openai = openaiClient || new OpenAI();
+    this.resolutionScaler = resolutionScaler;
+    this.openai = new OpenAI();
     this.instructions = INSTRUCTIONS;
   }
 
@@ -71,30 +73,29 @@ export class OpenAIComputerStreamer
 
     switch (action.type) {
       case "screenshot": {
-        const screenshotData = await desktop.screenshot();
-        const screenshotBase64 = Buffer.from(screenshotData).toString("base64");
-        return {
-          action: "screenshot",
-          data: {
-            type: "computer_screenshot",
-            image_url: `data:image/png;base64,${screenshotBase64}`,
-          },
-        };
+        break;
       }
       case "double_click": {
-        await desktop.moveMouse(action.x, action.y);
-        await desktop.doubleClick();
+        const coordinate = this.resolutionScaler.scaleToOriginalSpace([
+          action.x,
+          action.y,
+        ]);
+
+        await desktop.doubleClick(coordinate[0], coordinate[1]);
         break;
       }
       case "click": {
-        await desktop.moveMouse(action.x, action.y);
+        const coordinate = this.resolutionScaler.scaleToOriginalSpace([
+          action.x,
+          action.y,
+        ]);
 
         if (action.button === "left") {
-          await desktop.leftClick();
+          await desktop.leftClick(coordinate[0], coordinate[1]);
         } else if (action.button === "right") {
-          await desktop.rightClick();
+          await desktop.rightClick(coordinate[0], coordinate[1]);
         } else if (action.button === "wheel") {
-          await desktop.middleClick();
+          await desktop.middleClick(coordinate[0], coordinate[1]);
         }
         break;
       }
@@ -107,11 +108,15 @@ export class OpenAIComputerStreamer
         break;
       }
       case "move": {
-        await desktop.moveMouse(action.x, action.y);
+        const coordinate = this.resolutionScaler.scaleToOriginalSpace([
+          action.x,
+          action.y,
+        ]);
+
+        await desktop.moveMouse(coordinate[0], coordinate[1]);
         break;
       }
       case "scroll": {
-        // Convert scroll_y to direction
         if (action.scroll_y < 0) {
           await desktop.scroll("up", Math.abs(action.scroll_y));
         } else if (action.scroll_y > 0) {
@@ -123,31 +128,38 @@ export class OpenAIComputerStreamer
         break;
       }
       case "drag": {
-        if (action.path.length >= 2) {
-          await desktop.drag(
-            [action.path[0].x, action.path[0].y],
-            [action.path[1].x, action.path[1].y]
-          );
-        }
+        const startCoordinate = this.resolutionScaler.scaleToOriginalSpace([
+          action.path[0].x,
+          action.path[0].y,
+        ]);
+
+        const endCoordinate = this.resolutionScaler.scaleToOriginalSpace([
+          action.path[1].x,
+          action.path[1].y,
+        ]);
+
+        await desktop.drag(startCoordinate, endCoordinate);
         break;
       }
       default: {
-        console.log("Unknown action type:", action);
+        logWarning("Unknown action type:", action);
       }
     }
   }
 
   async *stream(
     props: ComputerInteractionStreamerFacadeStreamProps
-  ): AsyncGenerator<SSEEvent> {
+  ): AsyncGenerator<SSEEvent<"openai">> {
     const { messages, signal } = props;
 
     try {
+      const modelResolution = this.resolutionScaler.getScaledResolution();
+
       const computerTool: Tool = {
         // @ts-ignore
         type: "computer_use_preview",
-        display_width: this.resolution[0],
-        display_height: this.resolution[1],
+        display_width: modelResolution[0],
+        display_height: modelResolution[1],
         // @ts-ignore
         environment: "linux",
       };
@@ -155,7 +167,7 @@ export class OpenAIComputerStreamer
       let response = await this.openai.responses.create({
         model: "computer-use-preview",
         tools: [computerTool],
-        input: messages as ResponseInput,
+        input: [...(messages as ResponseInput)],
         truncation: "auto",
         instructions: this.instructions,
       });
@@ -169,19 +181,17 @@ export class OpenAIComputerStreamer
           break;
         }
 
-        yield {
-          type: SSEEventType.UPDATE,
-          content: response.output,
-        };
-
         const computerCalls = response.output.filter(
           (item) => item.type === "computer_call"
         );
 
         if (computerCalls.length === 0) {
           yield {
+            type: SSEEventType.REASONING,
+            content: response.output_text,
+          };
+          yield {
             type: SSEEventType.DONE,
-            content: response.output,
           };
           break;
         }
@@ -195,26 +205,32 @@ export class OpenAIComputerStreamer
         );
 
         if (reasoningItems.length > 0 && "content" in reasoningItems[0]) {
+          const content = reasoningItems[0].content;
+
+          // Log to debug why content is not a string
+          logDebug("Reasoning content structure:", content);
+
           yield {
             type: SSEEventType.REASONING,
-            content: String(reasoningItems[0].content),
+            content:
+              reasoningItems[0].content[0].type === "output_text"
+                ? reasoningItems[0].content[0].text
+                : JSON.stringify(reasoningItems[0].content),
           };
         }
 
         yield {
           type: SSEEventType.ACTION,
           action,
-          callId,
         };
 
         await this.executeAction(action);
 
         yield {
           type: SSEEventType.ACTION_COMPLETED,
-          callId,
         };
 
-        const newScreenshotData = await this.desktop.screenshot();
+        const newScreenshotData = await this.resolutionScaler.takeScreenshot();
         const newScreenshotBase64 =
           Buffer.from(newScreenshotData).toString("base64");
 
@@ -238,8 +254,6 @@ export class OpenAIComputerStreamer
         });
       }
     } catch (error) {
-      console.error("Error in stream:", error);
-
       yield {
         type: SSEEventType.ERROR,
         content: error instanceof Error ? error.message : "Unknown error",

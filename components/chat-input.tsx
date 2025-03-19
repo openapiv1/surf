@@ -8,7 +8,9 @@ import { cn } from "@/lib/utils";
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from "./ui/select";
@@ -58,8 +60,11 @@ export function ChatInput({
               )}
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="openai">OpenAI</SelectItem>
-              <SelectItem value="anthropic">Anthropic</SelectItem>
+              <SelectGroup>
+                <SelectLabel>Model</SelectLabel>
+                <SelectItem value="openai">OpenAI</SelectItem>
+                <SelectItem value="anthropic">Anthropic</SelectItem>
+              </SelectGroup>
             </SelectContent>
           </Select>
           <Input
