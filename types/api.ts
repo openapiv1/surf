@@ -1,48 +1,12 @@
 /**
- * Type definitions for OpenAI Computer API and SSE events
+ * Type definitions for Surf Computer API and SSE events
  */
-import { Sandbox } from "@e2b/desktop";
 import { ResponseComputerToolCall } from "openai/resources/responses/responses.mjs";
 
 /**
- * Constants
+ * Model types supported by Surf
  */
-const ACTION_DELAY_MS = 1000;
-
-/**
- * Environment types supported by OpenAI's computer-preview model
- */
-export type ComputerEnvironment = "mac" | "windows" | "ubuntu" | "browser";
-
-/**
- * OpenAI Computer API tool configuration
- */
-export type ComputerTool = {
-  type: "computer-preview";
-  display_width: number;
-  display_height: number;
-  environment: ComputerEnvironment;
-};
-
-/**
- * Input message for OpenAI API
- */
-export type UserMessage = {
-  role: "user";
-  content: string;
-};
-
-/**
- * Computer call output for sending screenshots back to OpenAI
- */
-export type ComputerCallOutput = {
-  call_id: string;
-  type: "computer_call_output";
-  output: {
-    type: "computer_screenshot";
-    image_url: string;
-  };
-};
+export type ComputerModel = "openai" | "anthropic";
 
 /**
  * SSE event types for client communication
@@ -144,83 +108,6 @@ export type ActionResponse = {
     image_url: string;
   };
 };
-
-/**
- * Helper function to execute actions with proper typing
- */
-export async function executeAction(
-  desktop: Sandbox,
-  action: ResponseComputerToolCall["action"]
-): Promise<ActionResponse | undefined> {
-  switch (action.type) {
-    case "screenshot": {
-      const screenshotData = await desktop.screenshot();
-      const screenshotBase64 = Buffer.from(screenshotData).toString("base64");
-      return {
-        action: "screenshot",
-        data: {
-          type: "computer_screenshot",
-          image_url: `data:image/png;base64,${screenshotBase64}`,
-        },
-      };
-    }
-    case "double_click": {
-      await desktop.doubleClick(action.x, action.y);
-      break;
-    }
-    case "click": {
-      // Perform the appropriate click based on the button
-      if (action.button === "left") {
-        await desktop.leftClick(action.x, action.y);
-      } else if (action.button === "right") {
-        await desktop.rightClick(action.x, action.y);
-      } else if (action.button === "wheel") {
-        await desktop.middleClick(action.x, action.y);
-      }
-      break;
-    }
-    case "type": {
-      await desktop.write(action.text);
-      break;
-    }
-    case "keypress": {
-      await desktop.press(action.keys);
-      break;
-    }
-    case "move": {
-      await desktop.moveMouse(action.x, action.y);
-      break;
-    }
-    case "scroll": {
-      // Convert scroll_y to direction
-      if (action.scroll_y < 0) {
-        await desktop.scroll("up", Math.abs(action.scroll_y));
-      } else if (action.scroll_y > 0) {
-        await desktop.scroll("down", action.scroll_y);
-      }
-      break;
-    }
-    case "wait": {
-      // Default wait time if not specified
-      await sleep(ACTION_DELAY_MS);
-      break;
-    }
-    case "drag": {
-      // Handle drag action with path
-      if (action.path.length >= 2) {
-        // Move to last position
-        await desktop.drag(
-          [action.path[0].x, action.path[0].y],
-          [action.path[action.path.length - 1].x, action.path[action.path.length - 1].y]
-        );
-      }
-      break;
-    }
-    default: {
-      console.log("Unknown action type:", action);
-    }
-  }
-}
 
 /**
  * Helper function to sleep for a specified duration

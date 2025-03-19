@@ -1,10 +1,20 @@
 "use client";
 
 import React from "react";
-import { PaperPlaneRight } from "@phosphor-icons/react";
-import { StopCircle } from "lucide-react";
+import { OpenAiLogo, PaperPlaneRight, Robot } from "@phosphor-icons/react";
+import { ChevronDown, StopCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "./ui/select";
+import { useChat } from "@/lib/chat-context";
+import { Input } from "./ui/input";
+import { AnthropicLogo } from "./icons";
 
 interface ChatInputProps {
   input: string;
@@ -30,26 +40,36 @@ export function ChatInput({
   placeholder = "Send a message...",
   className,
 }: ChatInputProps) {
+  const { model, setModel } = useChat();
+
   return (
     <form onSubmit={onSubmit} className={cn(className)}>
       <div className="flex items-center">
-        <div className="relative flex-1">
-          <input
-            className={cn(
-              "w-full h-14 px-4 pr-[100px] bg-bg-300/60 backdrop-blur-sm",
-              "text-fg dark:text-fg rounded-md",
-              "border border-border-200 shadow-lg",
-              "font-mono tracking-wide text-sm",
-              "outline-none  transition-all duration-200",
-              "placeholder:text-fg-300 dark:placeholder:text-fg-300",
-              "disabled:opacity-50 disabled:cursor-not-allowed"
-            )}
+        <div className="relative flex-1 flex items-center gap-2">
+          <Select value={model} onValueChange={setModel} disabled={disabled}>
+            <SelectTrigger
+              className="absolute rounded-lg left-1.5 z-10 inset-y-1.5 w-min aspect-square h-auto flex items-center justify-center hover:bg-white focus:bg-white"
+              withIcon={false}
+            >
+              {model == "openai" ? (
+                <OpenAiLogo className="size-5" />
+              ) : (
+                <AnthropicLogo className="size-5" />
+              )}
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="openai">OpenAI</SelectItem>
+              <SelectItem value="anthropic">Anthropic</SelectItem>
+            </SelectContent>
+          </Select>
+          <Input
             placeholder={placeholder}
             value={input}
             onChange={(e) => setInput(e.target.value)}
             autoFocus
             required
             disabled={disabled}
+            className="w-full px-16"
           />
           <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-2">
             {isLoading ? (

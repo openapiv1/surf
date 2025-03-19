@@ -18,7 +18,7 @@ import {
   AssistantChatMessage,
   SystemChatMessage,
 } from "@/types/chat";
-import { SSEEventType } from "@/types/api";
+import { ComputerModel, SSEEventType } from "@/types/api";
 
 /**
  * Chat context interface
@@ -33,6 +33,8 @@ interface ChatContextType extends ChatState {
   onSandboxCreated: (
     callback: (sandboxId: string, vncUrl: string) => void
   ) => void;
+  model: ComputerModel;
+  setModel: (model: ComputerModel) => void;
 }
 
 /**
@@ -59,6 +61,7 @@ export function ChatProvider({ children }: ChatProviderProps) {
   const onSandboxCreatedRef = useRef<
     ((sandboxId: string, vncUrl: string) => void) | undefined
   >(undefined);
+  const [model, setModel] = useState<"base" | "advanced">("base");
 
   /**
    * Parse an SSE event from the server
@@ -163,6 +166,7 @@ export function ChatProvider({ children }: ChatProviderProps) {
           sandboxId,
           environment,
           resolution,
+          model,
         }),
         signal: abortControllerRef.current.signal,
       });
@@ -434,6 +438,8 @@ export function ChatProvider({ children }: ChatProviderProps) {
     stopGeneration,
     clearMessages,
     handleSubmit,
+    model,
+    setModel,
     onSandboxCreated: (
       callback: (sandboxId: string, vncUrl: string) => void
     ) => {
