@@ -8,16 +8,15 @@ import {
   Power,
   Menu,
   X,
-  PackageOpenIcon,
-  PackageOpen,
+  ArrowUpRight,
 } from "lucide-react";
 import { useTheme } from "next-themes";
 import { toast } from "sonner";
 import { increaseTimeout, stopSandboxAction } from "@/app/actions";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChatList } from "@/components/chat-list";
-import { ChatInput } from "@/components/chat-input";
-import { ExamplePrompts } from "@/components/example-prompts";
+import { ChatList } from "@/components/chat/message-list";
+import { ChatInput } from "@/components/chat/input";
+import { ExamplePrompts } from "@/components/chat/example-prompts";
 import { useChat } from "@/lib/chat-context";
 import Frame from "@/components/frame";
 import { Button } from "@/components/ui/button";
@@ -26,10 +25,8 @@ import Link from "next/link";
 import Logo from "@/components/logo";
 import { RepoBanner } from "@/components/repo-banner";
 import { SANDBOX_TIMEOUT_MS } from "@/lib/config";
+import { Surfing } from "@/components/surfing";
 
-/**
- * Main page component
- */
 export default function Home() {
   const [sandboxId, setSandboxId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -43,7 +40,6 @@ export default function Home() {
   const iFrameWrapperRef = useRef<HTMLDivElement>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  // Get chat state and functions from context
   const {
     messages,
     isLoading: chatLoading,
@@ -56,27 +52,20 @@ export default function Home() {
     onSandboxCreated,
   } = useChat();
 
-  // Track tab visibility
   useEffect(() => {
     const handleVisibilityChange = () => {
       setIsTabVisible(document.visibilityState === "visible");
     };
 
-    // Set initial state
     setIsTabVisible(document.visibilityState === "visible");
 
-    // Add event listener
     document.addEventListener("visibilitychange", handleVisibilityChange);
 
-    // Clean up
     return () => {
       document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
   }, []);
 
-  /**
-   * Stop the current sandbox instance
-   */
   const stopSandbox = async () => {
     if (sandboxId) {
       try {
@@ -98,9 +87,6 @@ export default function Home() {
     }
   };
 
-  /**
-   * Increase the sandbox timeout
-   */
   const handleIncreaseTimeout = async () => {
     if (!sandboxId) return;
 
@@ -114,13 +100,9 @@ export default function Home() {
     }
   };
 
-  /**
-   * Handle form submission
-   */
   const onSubmit = (e: React.FormEvent) => {
     const content = handleSubmit(e);
     if (content) {
-      // Calculate appropriate resolution based on current container size
       const width =
         iFrameWrapperRef.current?.clientWidth ||
         (window.innerWidth < 768 ? window.innerWidth - 32 : 1024);
@@ -130,22 +112,16 @@ export default function Home() {
           ? Math.min(window.innerHeight * 0.4, 400)
           : 768);
 
-      // If no sandboxId exists, the API will create one automatically
-      // and send a SANDBOX_CREATED event that will be handled by the onSandboxCreated callback
       sendMessage({
         content,
         sandboxId: sandboxId || undefined,
-        environment: "linux", // Default to linux environment
+        environment: "linux",
         resolution: [width, height],
       });
     }
   };
 
-  /**
-   * Handle example prompt click
-   */
   const handleExampleClick = (prompt: string) => {
-    // Calculate appropriate resolution based on current container size
     const width =
       iFrameWrapperRef.current?.clientWidth ||
       (window.innerWidth < 768 ? window.innerWidth - 32 : 1024);
@@ -153,8 +129,6 @@ export default function Home() {
       iFrameWrapperRef.current?.clientHeight ||
       (window.innerWidth < 768 ? Math.min(window.innerHeight * 0.4, 400) : 768);
 
-    // If no sandboxId exists, the API will create one automatically
-    // and send a SANDBOX_CREATED event that will be handled by the onSandboxCreated callback
     sendMessage({
       content: prompt,
       sandboxId: sandboxId || undefined,
@@ -163,9 +137,6 @@ export default function Home() {
     });
   };
 
-  /**
-   * Handle sandbox creation from chat
-   */
   const handleSandboxCreated = (newSandboxId: string, newVncUrl: string) => {
     setSandboxId(newSandboxId);
     setVncUrl(newVncUrl);
@@ -173,17 +144,11 @@ export default function Home() {
     toast.success("Sandbox instance created");
   };
 
-  /**
-   * Handle clearing the chat
-   */
   const handleClearChat = () => {
     clearMessages();
     toast.success("Chat cleared");
   };
 
-  /**
-   * Theme toggle component
-   */
   const ThemeToggle = () => (
     <Button
       onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
@@ -199,7 +164,6 @@ export default function Home() {
     </Button>
   );
 
-  // Update timer
   useEffect(() => {
     if (!sandboxId) return;
     const interval = setInterval(() => {
@@ -210,7 +174,6 @@ export default function Home() {
     return () => clearInterval(interval);
   }, [sandboxId, isTabVisible]);
 
-  // Handle timeout
   useEffect(() => {
     if (!sandboxId) return;
 
@@ -228,7 +191,6 @@ export default function Home() {
     }
   }, [timeRemaining, sandboxId, stopGeneration, clearMessages, isTabVisible]);
 
-  // Set the onSandboxCreated callback
   useEffect(() => {
     onSandboxCreated((newSandboxId: string, newVncUrl: string) => {
       handleSandboxCreated(newSandboxId, newVncUrl);
@@ -237,14 +199,12 @@ export default function Home() {
 
   return (
     <div className="w-full h-dvh overflow-hidden p-2 sm:p-4 md:p-8 md:pb-10">
-      {/* Windows XP-like Container */}
       <Frame
         classNames={{
           wrapper: "w-full h-full",
           frame: "flex flex-col h-full overflow-hidden",
         }}
       >
-        {/* Navbar (Windows XP Title Bar) */}
         <div className="border-b w-full px-2 sm:px-3 py-2 flex items-center justify-between h-auto">
           <div className="flex flex-1 items-center text-base sm:text-lg truncate">
             <Link
@@ -264,7 +224,6 @@ export default function Home() {
             </Link>
           </div>
 
-          {/* Mobile menu button */}
           <div className="md:hidden">
             <Button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -280,12 +239,10 @@ export default function Home() {
             </Button>
           </div>
 
-          {/* Desktop controls */}
           <div className="hidden md:flex items-center gap-2">
             <ThemeToggle />
             <RepoBanner />
 
-            {/* Controls */}
             <AnimatePresence>
               {sandboxId && (
                 <motion.div
@@ -333,7 +290,6 @@ export default function Home() {
             </AnimatePresence>
           </div>
 
-          {/* Mobile controls (always visible) */}
           <div className="md:hidden flex items-center">
             <AnimatePresence>
               {sandboxId && (
@@ -384,7 +340,6 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Mobile menu */}
         <AnimatePresence>
           {mobileMenuOpen && (
             <motion.div
@@ -402,9 +357,7 @@ export default function Home() {
           )}
         </AnimatePresence>
 
-        {/* Main content area - flex column on mobile, row on desktop */}
         <div className="flex flex-col md:flex-row flex-1 overflow-hidden">
-          {/* Desktop Stream (Windows XP Content Area) */}
           <div
             ref={iFrameWrapperRef}
             className="relative w-full md:flex-1 h-[40vh] md:h-auto overflow-hidden"
@@ -441,32 +394,26 @@ export default function Home() {
               />
             ) : (
               <div className="absolute inset-0 flex flex-col items-center justify-center gap-4">
-                <div className="font-mono flex flex-col text-accent text-center leading-tight">
-                  <span>{`┌───────────┐`}</span>
-                  <span>{`  □ □ □ □`}</span>
-                  <span>{`  □     □`}</span>
-                  <span>{`  □     □`}</span>
-                  <span>{`  □ □ □ □`}</span>
-                  <span>{`└───────────┘`}</span>
-                </div>
-                <h1 className="text-center max-w-xs">
-                  Type a message or select an example prompt to start a new
-                  sandbox
+                <Surfing className="text-[7px] leading-[7px] text-accent font-bold" />
+                <h1 className="text-center text-fg-300 max-w-xs">
+                  <span className="text-fg">Type</span> a message or{" "}
+                  <span className="text-fg">select</span> an example prompt to
+                  start a new{" "}
+                  <a
+                    href="https://github.com/e2b-dev/desktop"
+                    className="underline inline-flex items-center gap-1 decoration-accent decoration-1 underline-offset-2 text-accent"
+                    target="_blank"
+                  >
+                    sandbox <ArrowUpRight className="size-4" />
+                  </a>
                 </h1>
               </div>
             )}
           </div>
 
-          {/* Chat Section - Bottom on mobile, right on desktop */}
           <div className="flex-1 flex flex-col relative border-t md:border-t-0 md:border-l overflow-hidden h-[60vh] md:h-auto md:max-w-xl">
-            {/* Chat Messages */}
-            <ChatList
-              className="flex-1"
-              messages={messages}
-              groupActions={true}
-            />
+            <ChatList className="flex-1" messages={messages} />
 
-            {/* Example Prompts */}
             {messages.length === 0 && (
               <ExamplePrompts
                 onPromptClick={handleExampleClick}
@@ -475,7 +422,6 @@ export default function Home() {
               />
             )}
 
-            {/* Chat Input */}
             <ChatInput
               input={input}
               setInput={setInput}

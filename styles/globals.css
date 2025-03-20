@@ -23,6 +23,11 @@
     @apply font-mono font-light uppercase;
   }
 
+  /* Selection styling */
+  ::selection {
+    @apply bg-accent/20;
+  }
+
   /* Scrollbar styling */
   ::-webkit-scrollbar {
     width: 8px;

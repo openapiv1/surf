@@ -1,8 +1,8 @@
 "use client";
 
 import React from "react";
-import { Sparkles, Terminal } from "lucide-react";
-import { Button } from "./ui/button";
+import { Terminal } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 interface ExamplePromptProps {
@@ -60,7 +60,7 @@ export function ExamplePrompts({
   return (
     <div
       className={cn(
-        "flex flex-col items-center gap-3 sm:gap-4 mx-auto my-4 sm:my-6 w-full max-w-[600px]",
+        "flex flex-col items-center gap-3 sm:gap-4 mx-auto my-4 sm:my-6 w-full max-w-[600px] px-4",
         className
       )}
     >

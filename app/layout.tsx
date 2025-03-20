@@ -2,7 +2,7 @@ import "@/styles/globals.css";
 
 import { Metadata } from "next";
 import { Toaster } from "sonner";
-import { Providers } from "./providers";
+import { Providers } from "../components/providers";
 import { IBM_Plex_Sans, IBM_Plex_Mono } from "next/font/google";
 import { ChatProvider } from "@/lib/chat-context";
 import { Analytics } from "@vercel/analytics/react";

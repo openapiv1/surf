@@ -12,17 +12,14 @@ import {
   ChatState,
   ParsedSSEEvent,
   SendMessageOptions,
-  AnyMessagePart,
   ActionChatMessage,
   UserChatMessage,
   AssistantChatMessage,
   SystemChatMessage,
 } from "@/types/chat";
-import { SSEEventType } from "@/types/api";
+import { ComputerModel, SSEEventType } from "@/types/api";
+import { logDebug, logError } from "./logger";
 
-/**
- * Chat context interface
- */
 interface ChatContextType extends ChatState {
   sendMessage: (options: SendMessageOptions) => Promise<void>;
   stopGeneration: () => void;
@@ -33,23 +30,16 @@ interface ChatContextType extends ChatState {
   onSandboxCreated: (
     callback: (sandboxId: string, vncUrl: string) => void
   ) => void;
+  model: ComputerModel;
+  setModel: (model: ComputerModel) => void;
 }
 
-/**
- * Chat context
- */
 const ChatContext = createContext<ChatContextType | undefined>(undefined);
 
-/**
- * Chat context provider props
- */
 interface ChatProviderProps {
   children: React.ReactNode;
 }
 
-/**
- * Chat context provider
- */
 export function ChatProvider({ children }: ChatProviderProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -59,32 +49,17 @@ export function ChatProvider({ children }: ChatProviderProps) {
   const onSandboxCreatedRef = useRef<
     ((sandboxId: string, vncUrl: string) => void) | undefined
   >(undefined);
+  const [model, setModel] = useState<ComputerModel>("openai");
 
-  /**
-   * Parse an SSE event from the server
-   * Handles various SSE format edge cases
-   */
-  const parseSSEEvent = (data: string): ParsedSSEEvent | null => {
+  const parseSSEEvent = (data: string): ParsedSSEEvent<typeof model> | null => {
     try {
-      // Handle empty data
       if (!data || data.trim() === "") {
         return null;
       }
 
-      // For debugging in development
-      if (process.env.NODE_ENV === "development") {
-        console.debug(
-          "Parsing SSE event:",
-          data.substring(0, 100) + (data.length > 100 ? "..." : "")
-        );
-      }
-
-      // Check if the data starts with "data: " prefix (SSE format)
       if (data.startsWith("data: ")) {
-        // Extract the JSON part (remove "data: " prefix)
         const jsonStr = data.substring(6).trim();
 
-        // Handle empty JSON
         if (!jsonStr) {
           return null;
         }
@@ -92,17 +67,14 @@ export function ChatProvider({ children }: ChatProviderProps) {
         return JSON.parse(jsonStr);
       }
 
-      // Handle case where multiple SSE events are in one chunk
-      // This could happen if the newlines aren't properly handled
       const match = data.match(/data: ({.*})/);
       if (match && match[1]) {
         return JSON.parse(match[1]);
       }
 
-      // If no prefix, try parsing directly (fallback)
       return JSON.parse(data);
     } catch (e) {
-      console.error(
+      logError(
         "Error parsing SSE event:",
         e,
         "Data:",
@@ -112,9 +84,6 @@ export function ChatProvider({ children }: ChatProviderProps) {
     }
   };
 
-  /**
-   * Send a message to the server
-   */
   const sendMessage = async ({
     content,
     sandboxId,
@@ -126,7 +95,6 @@ export function ChatProvider({ children }: ChatProviderProps) {
     setIsLoading(true);
     setError(null);
 
-    // Add user message to chat
     const userMessage: ChatMessage = {
       role: "user",
       content,
@@ -135,20 +103,14 @@ export function ChatProvider({ children }: ChatProviderProps) {
 
     setMessages((prev) => [...prev, userMessage]);
 
-    // Create abort controller for the fetch request
     abortControllerRef.current = new AbortController();
 
     try {
-      // Prepare messages for API request
       const apiMessages = messages
         .concat(userMessage)
-        .filter((msg) => msg.role !== "action") // Filter out action messages
+        .filter((msg) => msg.role === "user" || msg.role === "assistant")
         .map((msg) => {
-          // Type assertion to access content property
-          const typedMsg = msg as
-            | UserChatMessage
-            | AssistantChatMessage
-            | SystemChatMessage;
+          const typedMsg = msg as UserChatMessage | AssistantChatMessage;
           return {
             role: typedMsg.role,
             content: typedMsg.content,
@@ -163,6 +125,7 @@ export function ChatProvider({ children }: ChatProviderProps) {
           sandboxId,
           environment,
           resolution,
+          model,
         }),
         signal: abortControllerRef.current.signal,
       });
@@ -174,48 +137,36 @@ export function ChatProvider({ children }: ChatProviderProps) {
       const reader = response.body?.getReader();
       if (!reader) throw new Error("Response body is null");
 
-      // Create a temporary assistant message that will be updated
-      const assistantMessageId = (Date.now() + 1).toString();
       setMessages((prev) => [
         ...prev,
         {
-          role: "assistant",
-          content: "Thinking...",
-          id: assistantMessageId,
-          parts: [],
-          isLoading: true,
-          timestamp: Date.now(),
+          role: "system",
+          id: `system-message-${Date.now()}`,
+          content: "Task started",
         },
       ]);
 
-      // Process the stream
       const decoder = new TextDecoder();
       let assistantMessage = "";
-      let parts: AnyMessagePart[] = [];
-      let buffer = ""; // Buffer to accumulate partial chunks
+      let buffer = "";
 
       while (true) {
         const { done, value } = await reader.read();
+
         if (done) {
-          // Process any remaining data in the buffer before breaking
           if (buffer.trim()) {
             const parsedEvent = parseSSEEvent(buffer);
             if (parsedEvent) {
-              // Handle the final event
               if (parsedEvent.type === SSEEventType.DONE) {
-                parts = parsedEvent.content;
-                setMessages((prev) =>
-                  prev.map((msg) =>
-                    msg.id === assistantMessageId
-                      ? {
-                          ...msg,
-                          content: assistantMessage || "Task completed",
-                          parts,
-                          isLoading: false,
-                        }
-                      : msg
-                  )
-                );
+                setMessages((prev) => {
+                  const systemMessage: SystemChatMessage = {
+                    role: "system",
+                    id: `system-${Date.now()}`,
+                    content: "Task completed",
+                  };
+
+                  return [...prev, systemMessage];
+                });
                 setIsLoading(false);
               }
             }
@@ -224,62 +175,31 @@ export function ChatProvider({ children }: ChatProviderProps) {
         }
 
         const chunk = decoder.decode(value, { stream: true });
-        buffer += chunk; // Add new chunk to buffer
+        buffer += chunk;
 
-        // Split by double newlines which indicate complete SSE events
         const events = buffer.split("\n\n");
 
-        // The last element might be incomplete, so keep it in the buffer
         buffer = events.pop() || "";
 
-        // Process complete events
         for (const event of events) {
-          if (!event.trim()) continue; // Skip empty events
+          if (!event.trim()) continue;
 
           const parsedEvent = parseSSEEvent(event);
           if (!parsedEvent) continue;
 
+          if (process.env.NODE_ENV === "development") {
+            logDebug("Parsed event:", parsedEvent);
+          }
+
           switch (parsedEvent.type) {
-            case SSEEventType.UPDATE:
-              // Update the assistant message with the latest content
-              parts = parsedEvent.content;
-
-              // Extract text content from reasoning items
-              const reasoningItems = parsedEvent.content.filter(
-                (item: AnyMessagePart) =>
-                  item.type === "text" && "content" in item
-              );
-
-              if (reasoningItems.length > 0) {
-                assistantMessage = reasoningItems
-                  .map((item: any) => item.content)
-                  .join("\n");
-              }
-
-              setMessages((prev) =>
-                prev.map((msg) =>
-                  msg.id === assistantMessageId
-                    ? {
-                        ...msg,
-                        content: assistantMessage || "Thinking...",
-                        parts,
-                        isLoading: true,
-                      }
-                    : msg
-                )
-              );
-              break;
-
             case SSEEventType.ACTION:
-              if (parsedEvent.action && parsedEvent.callId) {
-                // Add an action message
-                const actionMessage: ActionChatMessage = {
+              if (parsedEvent.action) {
+                const actionMessage: ActionChatMessage<typeof model> = {
                   role: "action",
                   id: `action-${Date.now()}`,
-                  actionType: parsedEvent.action.type,
                   action: parsedEvent.action,
-                  callId: parsedEvent.callId,
                   status: "pending",
+                  model,
                 };
 
                 setMessages((prev) => [...prev, actionMessage]);
@@ -289,39 +209,40 @@ export function ChatProvider({ children }: ChatProviderProps) {
             case SSEEventType.REASONING:
               if (typeof parsedEvent.content === "string") {
                 assistantMessage = parsedEvent.content;
-                setMessages((prev) =>
-                  prev.map((msg) =>
-                    msg.id === assistantMessageId
-                      ? {
-                          ...msg,
-                          content: assistantMessage,
-                          isLoading: true,
-                        }
-                      : msg
-                  )
-                );
+                const reasoningMessage: AssistantChatMessage = {
+                  role: "assistant",
+                  id: `assistant-${Date.now()}-${messages.length}`,
+                  content: assistantMessage,
+                  model,
+                };
+                setMessages((prev) => [...prev, reasoningMessage]);
               }
               break;
 
             case SSEEventType.DONE:
-              parts = parsedEvent.content;
-              setMessages((prev) =>
-                prev.map((msg) =>
-                  msg.id === assistantMessageId
-                    ? {
-                        ...msg,
-                        content: assistantMessage || "Task completed",
-                        parts,
-                        isLoading: false,
-                      }
-                    : msg
-                )
-              );
+              setMessages((prev) => {
+                const systemMessage: SystemChatMessage = {
+                  role: "system",
+                  id: `system-${Date.now()}`,
+                  content: parsedEvent.content || "Task completed",
+                };
+
+                return [...prev, systemMessage];
+              });
               setIsLoading(false);
               break;
 
             case SSEEventType.ERROR:
               setError(parsedEvent.content);
+              setMessages((prev) => [
+                ...prev,
+                {
+                  role: "system",
+                  id: `system-${Date.now()}`,
+                  content: parsedEvent.content,
+                  isError: true,
+                },
+              ]);
               setIsLoading(false);
               break;
 
@@ -339,79 +260,53 @@ export function ChatProvider({ children }: ChatProviderProps) {
               break;
 
             case SSEEventType.ACTION_COMPLETED:
-              if (parsedEvent.callId) {
-                // Update the action message status to completed
-                setMessages((prev) =>
-                  prev.map((msg) => {
-                    if (
-                      msg.role === "action" &&
-                      "callId" in msg &&
-                      msg.callId === parsedEvent.callId
-                    ) {
-                      return {
-                        ...msg,
-                        status: "completed",
-                      };
-                    }
-                    return msg;
-                  })
-                );
-              }
+              setMessages((prev) => {
+                const lastActionIndex = [...prev]
+                  .reverse()
+                  .findIndex((msg) => msg.role === "action");
+
+                if (lastActionIndex !== -1) {
+                  const actualIndex = prev.length - 1 - lastActionIndex;
+
+                  return prev.map((msg, index) =>
+                    index === actualIndex
+                      ? { ...msg, status: "completed" }
+                      : msg
+                  );
+                }
+
+                return prev;
+              });
               break;
           }
         }
       }
     } catch (error) {
-      console.error("Error sending message:", error);
+      logError("Error sending message:", error);
       setError(error instanceof Error ? error.message : "An error occurred");
       setIsLoading(false);
     }
   };
 
-  /**
-   * Stop message generation
-   */
   const stopGeneration = useCallback(() => {
     if (abortControllerRef.current) {
       try {
-        // Abort with a reason to avoid the "signal is aborted without reason" error
         abortControllerRef.current.abort(
           new DOMException("Generation stopped by user", "AbortError")
         );
         setIsLoading(false);
-
-        // Update the loading message to indicate it was stopped
-        setMessages((prev) =>
-          prev.map((msg) => {
-            if ("isLoading" in msg && msg.isLoading) {
-              return {
-                ...msg,
-                content: msg.content + " (stopped)",
-                isLoading: false,
-              };
-            }
-            return msg;
-          })
-        );
       } catch (error) {
-        console.error("Error stopping generation:", error);
-        // Still set loading to false even if there's an error
+        logError("Error stopping generation:", error);
         setIsLoading(false);
       }
     }
   }, []);
 
-  /**
-   * Clear all messages
-   */
   const clearMessages = useCallback(() => {
     setMessages([]);
     setError(null);
   }, []);
 
-  /**
-   * Handle form submission
-   */
   const handleSubmit = useCallback(
     (e: React.FormEvent): string | undefined => {
       e.preventDefault();
@@ -434,6 +329,8 @@ export function ChatProvider({ children }: ChatProviderProps) {
     stopGeneration,
     clearMessages,
     handleSubmit,
+    model,
+    setModel,
     onSandboxCreated: (
       callback: (sandboxId: string, vncUrl: string) => void
     ) => {
@@ -444,9 +341,6 @@ export function ChatProvider({ children }: ChatProviderProps) {
   return <ChatContext.Provider value={value}>{children}</ChatContext.Provider>;
 }
 
-/**
- * Hook to use the chat context
- */
 export function useChat() {
   const context = useContext(ChatContext);
   if (context === undefined) {
