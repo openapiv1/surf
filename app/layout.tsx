@@ -5,6 +5,7 @@ import { Toaster } from "sonner";
 import { Providers } from "./providers";
 import { IBM_Plex_Sans, IBM_Plex_Mono } from "next/font/google";
 import { ChatProvider } from "@/lib/chat-context";
+import { Analytics } from "@vercel/analytics/react";
 
 const ibmPlexSans = IBM_Plex_Sans({
   subsets: ["latin"],
@@ -49,6 +50,7 @@ export default function RootLayout({
           <ChatProvider>
             <Toaster position="top-center" richColors />
             {children}
+            <Analytics />
           </ChatProvider>
         </Providers>
       </body>
