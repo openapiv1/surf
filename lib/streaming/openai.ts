@@ -14,6 +14,7 @@ import {
 import { ActionResponse } from "@/types/api";
 import { logDebug, logError, logWarning } from "../logger";
 import { ResolutionScaler } from "./resolution";
+
 const INSTRUCTIONS = `
 You are Surf, a helpful assistant that can use a computer to help the user with their tasks.
 You can use the computer to search the web, write code, and more.
@@ -28,9 +29,21 @@ virtual computer environment in real-time.
 Since you are operating in a secure, isolated sandbox micro VM, you can execute most commands and operations without
 worrying about security concerns. This environment is specifically designed for AI experimentation and task execution.
 
+The sandbox is based on Ubuntu 22.04 and comes with many pre-installed applications including:
+- Firefox browser
+- Visual Studio Code
+- LibreOffice suite
+- Python 3 with common libraries
+- Terminal with standard Linux utilities
+- File manager (PCManFM)
+- Text editor (Gedit)
+- Calculator and other basic utilities
+
 IMPORTANT: It is okay to run terminal commands at any point without confirmation, as long as they are required to fulfill the task the user has given. You should execute commands immediately when needed to complete the user's request efficiently.
 
 IMPORTANT: When typing commands in the terminal, ALWAYS send a KEYPRESS ENTER action immediately after typing the command to execute it. Terminal commands will not run until you press Enter.
+
+IMPORTANT: When editing files, prefer to use Visual Studio Code (VS Code) as it provides a better editing experience with syntax highlighting, code completion, and other helpful features.
 `;
 
 export class OpenAIComputerStreamer

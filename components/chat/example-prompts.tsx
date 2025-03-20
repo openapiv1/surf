@@ -42,16 +42,24 @@ export function ExamplePrompts({
   onPromptClick,
   prompts = [
     {
-      text: "Check SF weather",
-      prompt: "What's the weather like in San Francisco?",
+      text: "Create a JavaScript script",
+      prompt:
+        "Create a simple JavaScript script that calculates the Fibonacci sequence and save it to a file",
     },
     {
-      text: "Find cat pictures",
-      prompt: "Search for cute cat pictures on the internet",
+      text: "Edit a document in VS Code",
+      prompt:
+        "Open VS Code and create a simple React component that displays a counter",
     },
     {
-      text: "OpenAI news",
-      prompt: "Show me the latest news about OpenAI",
+      text: "Browse GitHub",
+      prompt:
+        "Open Firefox and go to GitHub to search for popular machine learning repositories",
+    },
+    {
+      text: "Create a spreadsheet",
+      prompt:
+        "Open LibreOffice Calc and create a simple budget spreadsheet with formulas",
     },
   ],
   disabled = false,
