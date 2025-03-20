@@ -6,7 +6,6 @@ import {
 } from "@/lib/streaming";
 import { SANDBOX_TIMEOUT_MS } from "@/lib/config";
 import { OpenAIComputerStreamer } from "@/lib/streaming/openai";
-import { AnthropicComputerStreamer } from "@/lib/streaming/anthropic";
 import { logError } from "@/lib/logger";
 import { ResolutionScaler } from "@/lib/streaming/resolution";
 
@@ -22,7 +21,8 @@ class StreamerFactory {
 
     switch (model) {
       case "anthropic":
-        return new AnthropicComputerStreamer(desktop, resolutionScaler);
+      // currently not implemented
+      /* return new AnthropicComputerStreamer(desktop, resolutionScaler); */
       case "openai":
       default:
         return new OpenAIComputerStreamer(desktop, resolutionScaler);

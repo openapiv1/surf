@@ -13,6 +13,7 @@ import {
 } from "@anthropic-ai/sdk/resources/beta/messages/messages.mjs";
 import { ResolutionScaler } from "./resolution";
 import { ComputerAction, ToolInput } from "@/types/anthropic";
+import { logError } from "../logger";
 
 const INSTRUCTIONS = `
 You are Surf, a helpful assistant that can use a computer to help the user with their tasks.
@@ -49,9 +50,15 @@ export class AnthropicComputerStreamer
   private anthropic: Anthropic;
 
   constructor(desktop: Sandbox, resolutionScaler: ResolutionScaler) {
+    if (!process.env.ANTHROPIC_API_KEY) {
+      throw new Error("ANTHROPIC_API_KEY is not set");
+    }
+
     this.desktop = desktop;
     this.resolutionScaler = resolutionScaler;
-    this.anthropic = new Anthropic();
+    this.anthropic = new Anthropic({
+      apiKey: process.env.ANTHROPIC_API_KEY,
+    });
     this.instructions = INSTRUCTIONS;
   }
 
@@ -259,7 +266,7 @@ export class AnthropicComputerStreamer
         const modelResolution = this.resolutionScaler.getScaledResolution();
 
         const response = await this.anthropic.beta.messages.create({
-          model: "claude-3-7-sonnet-20250219",
+          model: "claude-3-7-sonnet-latest",
           max_tokens: 4096,
           messages: anthropicMessages,
           system: this.instructions,
@@ -364,9 +371,10 @@ export class AnthropicComputerStreamer
         }
       }
     } catch (error) {
+      logError("ANTHROPIC_STREAMER", error);
       yield {
         type: SSEEventType.ERROR,
-        content: error instanceof Error ? error.message : "Unknown error",
+        content: "An error occurred with the AI service. Please try again.",
       };
     }
   }

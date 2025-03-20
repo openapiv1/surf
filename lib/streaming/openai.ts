@@ -1,6 +1,6 @@
 import { Sandbox } from "@e2b/desktop";
 import OpenAI from "openai";
-import { SSEEventType, SSEEvent, sleep } from "@/types/api";
+import { SSEEventType, SSEEvent } from "@/types/api";
 import {
   ResponseComputerToolCall,
   ResponseInput,
@@ -12,9 +12,8 @@ import {
   ComputerInteractionStreamerFacadeStreamProps,
 } from "@/lib/streaming";
 import { ActionResponse } from "@/types/api";
-import { logDebug, logWarning } from "../logger";
+import { logDebug, logError, logWarning } from "../logger";
 import { ResolutionScaler } from "./resolution";
-
 const INSTRUCTIONS = `
 You are Surf, a helpful assistant that can use a computer to help the user with their tasks.
 You can use the computer to search the web, write code, and more.
@@ -29,25 +28,9 @@ virtual computer environment in real-time.
 Since you are operating in a secure, isolated sandbox micro VM, you can execute most commands and operations without
 worrying about security concerns. This environment is specifically designed for AI experimentation and task execution.
 
-IMPORTANT: You MUST ALWAYS press Enter after typing commands in the terminal or command line interface.
-When a user asks you to run a command in the terminal, ALWAYS use the keypress action with the "Enter" key
-immediately after typing the command. NEVER wait for additional instructions to press Enter.
+IMPORTANT: It is okay to run terminal commands at any point without confirmation, as long as they are required to fulfill the task the user has given. You should execute commands immediately when needed to complete the user's request efficiently.
 
-Similarly, when the user explicitly asks you to press any key (Enter, Tab, Ctrl+C, etc.) in any application or interface,
-you MUST use the keypress action to do so immediately. You can and should press Enter or other keys whenever needed in
-any application, not just terminals. However, pressing Enter after terminal commands is especially critical as commands
-will not execute without it.
-
-Remember: In terminal environments, commands DO NOT execute until Enter is pressed. This is a critical part
-of your functionality.
-
-When working on complex tasks, always continue to completion without stopping to ask for confirmation or additional
-instructions. Break down complex tasks into steps and execute them fully without pausing. If a task requires multiple
-commands or actions, perform them all in sequence without waiting for the user to tell you to continue. This provides
-a smoother experience for the user.
-
-IMPORTANT: NEVER use the screenshot tool. You automatically receive a screenshot after each action, so there is no need
-to request screenshots manually. Using the screenshot tool is redundant and will slow down the interaction.
+IMPORTANT: When typing commands in the terminal, ALWAYS send a KEYPRESS ENTER action immediately after typing the command to execute it. Terminal commands will not run until you press Enter.
 `;
 
 export class OpenAIComputerStreamer
@@ -170,6 +153,10 @@ export class OpenAIComputerStreamer
         input: [...(messages as ResponseInput)],
         truncation: "auto",
         instructions: this.instructions,
+        reasoning: {
+          effort: "medium",
+          generate_summary: "concise",
+        },
       });
 
       while (true) {
@@ -251,12 +238,17 @@ export class OpenAIComputerStreamer
           tools: [computerTool],
           input: [computerCallOutput],
           truncation: "auto",
+          reasoning: {
+            effort: "medium",
+            generate_summary: "concise",
+          },
         });
       }
     } catch (error) {
+      logError("OPENAI_STREAMER", error);
       yield {
         type: SSEEventType.ERROR,
-        content: error instanceof Error ? error.message : "Unknown error",
+        content: "An error occurred with the AI service. Please try again.",
       };
     }
   }

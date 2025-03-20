@@ -1,8 +1,8 @@
 "use client";
 
 import React, { useMemo } from "react";
-import { OpenAiLogo, PaperPlaneRight, Robot } from "@phosphor-icons/react";
-import { ChevronDown, ChevronsRight, StopCircle } from "lucide-react";
+import { OpenAiLogo } from "@phosphor-icons/react";
+import { ChevronsRight, StopCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import {
@@ -12,7 +12,6 @@ import {
   SelectItem,
   SelectLabel,
   SelectTrigger,
-  SelectValue,
 } from "../ui/select";
 import { useChat } from "@/lib/chat-context";
 import { Input } from "../ui/input";
@@ -51,7 +50,8 @@ export function ChatInput({
     <form onSubmit={onSubmit} className={cn(className)}>
       <div className="flex items-center">
         <div className="relative flex-1 flex items-center gap-2">
-          <Select value={model} onValueChange={setModel} disabled={disabled}>
+          {/* CURRENTLY NOT USED */}
+          {/*  <Select value={model} onValueChange={setModel} disabled={disabled}>
             <SelectTrigger
               className="absolute rounded-lg left-1.5 z-10 inset-y-1.5 border-border-200 w-min aspect-square h-auto flex items-center justify-center hover:bg-bg focus:bg-bg"
               withIcon={false}
@@ -69,7 +69,7 @@ export function ChatInput({
                 <SelectItem value="anthropic">Anthropic</SelectItem>
               </SelectGroup>
             </SelectContent>
-          </Select>
+          </Select> */}
           <Input
             placeholder={placeholder}
             value={input}
@@ -77,7 +77,7 @@ export function ChatInput({
             autoFocus
             required
             disabled={disabled}
-            className="w-full px-16"
+            className="w-full pr-16"
           />
           <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-2">
             {isLoading ? (
