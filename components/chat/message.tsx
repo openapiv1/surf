@@ -4,6 +4,7 @@ import React from "react";
 import {
   ChatMessage as ChatMessageType,
   ActionChatMessage,
+  AssistantChatMessage,
 } from "@/types/chat";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
@@ -13,16 +14,13 @@ import {
   AlertCircle,
   CheckCircle,
   Clock,
-  Bot,
   User,
   Info,
-  Code,
-  Image,
-  Link as LinkIcon,
-  MessageSquare,
 } from "lucide-react";
 import { useChat } from "@/lib/chat-context";
-import { Badge } from "./ui/badge";
+import { Badge } from "../ui/badge";
+import { OpenAiLogo } from "@phosphor-icons/react";
+import { AnthropicLogo } from "../icons";
 
 const messageVariants = cva("", {
   variants: {
@@ -102,7 +100,8 @@ function ActionMessageDisplay({
 }
 
 export function ChatMessage({ message, className }: ChatMessageProps) {
-  const { role } = message;
+  const role = message.role;
+
   const isUser = role === "user";
   const isAssistant = role === "assistant";
   const isAction = role === "action";
@@ -114,7 +113,7 @@ export function ChatMessage({ message, className }: ChatMessageProps) {
   if (isSystem) {
     return (
       <div className={cn("w-full flex justify-center", className)}>
-        <Badge variant={isError ? "error" : "accent"}>{message.content}</Badge>
+        <Badge variant={isError ? "error" : "muted"}>{message.content}</Badge>
       </div>
     );
   }
@@ -130,7 +129,13 @@ export function ChatMessage({ message, className }: ChatMessageProps) {
 
   const getRoleIcon = () => {
     if (isUser) return <User className="h-3 w-3" />;
-    if (isAssistant) return <Bot className="h-3 w-3" />;
+    if (isAssistant) {
+      if ((message as AssistantChatMessage).model === "openai") {
+        return <OpenAiLogo className="h-3 w-3" />;
+      } else {
+        return <AnthropicLogo className="h-3 w-3" />;
+      }
+    }
     return <Info className="h-3 w-3" />;
   };
 

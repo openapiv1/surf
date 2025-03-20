@@ -8,16 +8,15 @@ import {
   Power,
   Menu,
   X,
-  PackageOpenIcon,
-  PackageOpen,
+  ArrowUpRight,
 } from "lucide-react";
 import { useTheme } from "next-themes";
 import { toast } from "sonner";
 import { increaseTimeout, stopSandboxAction } from "@/app/actions";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChatList } from "@/components/chat-list";
-import { ChatInput } from "@/components/chat-input";
-import { ExamplePrompts } from "@/components/example-prompts";
+import { ChatList } from "@/components/chat/message-list";
+import { ChatInput } from "@/components/chat/input";
+import { ExamplePrompts } from "@/components/chat/example-prompts";
 import { useChat } from "@/lib/chat-context";
 import Frame from "@/components/frame";
 import { Button } from "@/components/ui/button";
@@ -26,6 +25,7 @@ import Link from "next/link";
 import Logo from "@/components/logo";
 import { RepoBanner } from "@/components/repo-banner";
 import { SANDBOX_TIMEOUT_MS } from "@/lib/config";
+import { Surfing } from "@/components/surfing";
 
 /**
  * Main page component
@@ -441,17 +441,18 @@ export default function Home() {
               />
             ) : (
               <div className="absolute inset-0 flex flex-col items-center justify-center gap-4">
-                <div className="font-mono flex flex-col text-accent text-center leading-tight">
-                  <span>{`┌───────────┐`}</span>
-                  <span>{`  □ □ □ □`}</span>
-                  <span>{`  □     □`}</span>
-                  <span>{`  □     □`}</span>
-                  <span>{`  □ □ □ □`}</span>
-                  <span>{`└───────────┘`}</span>
-                </div>
-                <h1 className="text-center max-w-xs">
-                  Type a message or select an example prompt to start a new
-                  sandbox
+                <Surfing className="text-[7px] leading-[7px] text-accent font-bold" />
+                <h1 className="text-center text-fg-300 max-w-xs">
+                  <span className="text-fg">Type</span> a message or{" "}
+                  <span className="text-fg">select</span> an example prompt to
+                  start a new{" "}
+                  <a
+                    href="https://github.com/e2b-dev/desktop"
+                    className="underline inline-flex items-center gap-1 decoration-accent decoration-1 underline-offset-2 text-accent"
+                    target="_blank"
+                  >
+                    sandbox <ArrowUpRight className="size-4" />
+                  </a>
                 </h1>
               </div>
             )}

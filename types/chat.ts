@@ -3,7 +3,7 @@
  */
 import { ResponseComputerToolCall } from "openai/resources/responses/responses.mjs";
 import { ActionEvent, ComputerModel, SSEEventType } from "./api";
-import { ComputerAction } from "@/lib/streaming/anthropic";
+import { ComputerAction } from "@/types/anthropic";
 
 /**
  * Role of a chat message
@@ -32,6 +32,7 @@ export interface UserChatMessage extends BaseChatMessage {
 export interface AssistantChatMessage extends BaseChatMessage {
   role: "assistant";
   content: string;
+  model: ComputerModel;
 }
 
 /**
@@ -53,6 +54,7 @@ export interface ActionChatMessage<T extends ComputerModel = ComputerModel>
     ? ResponseComputerToolCall["action"]
     : ComputerAction;
   status?: "pending" | "completed" | "failed";
+  model: ComputerModel;
 }
 
 /**

@@ -1,8 +1,8 @@
 "use client";
 
-import React from "react";
+import React, { useMemo } from "react";
 import { OpenAiLogo, PaperPlaneRight, Robot } from "@phosphor-icons/react";
-import { ChevronDown, StopCircle } from "lucide-react";
+import { ChevronDown, ChevronsRight, StopCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import {
@@ -13,10 +13,11 @@ import {
   SelectLabel,
   SelectTrigger,
   SelectValue,
-} from "./ui/select";
+} from "../ui/select";
 import { useChat } from "@/lib/chat-context";
-import { Input } from "./ui/input";
-import { AnthropicLogo } from "./icons";
+import { Input } from "../ui/input";
+import { AnthropicLogo } from "../icons";
+import { motion } from "motion/react";
 
 interface ChatInputProps {
   input: string;
@@ -39,10 +40,12 @@ export function ChatInput({
   isLoading,
   onStop,
   disabled = false,
-  placeholder = "Send a message...",
+  placeholder = "What are we surfing today?",
   className,
 }: ChatInputProps) {
   const { model, setModel } = useChat();
+
+  const isInputEmpty = useMemo(() => input.trim() === "", [input]);
 
   return (
     <form onSubmit={onSubmit} className={cn(className)}>
@@ -50,7 +53,7 @@ export function ChatInput({
         <div className="relative flex-1 flex items-center gap-2">
           <Select value={model} onValueChange={setModel} disabled={disabled}>
             <SelectTrigger
-              className="absolute rounded-lg left-1.5 z-10 inset-y-1.5 w-min aspect-square h-auto flex items-center justify-center hover:bg-white focus:bg-white"
+              className="absolute rounded-lg left-1.5 z-10 inset-y-1.5 border-border-200 w-min aspect-square h-auto flex items-center justify-center hover:bg-bg focus:bg-bg"
               withIcon={false}
             >
               {model == "openai" ? (
@@ -93,10 +96,21 @@ export function ChatInput({
                 type="submit"
                 variant="accent"
                 size="iconLg"
-                disabled={disabled}
+                disabled={disabled || isInputEmpty}
                 title="Send message"
               >
-                <PaperPlaneRight className="w-5 h-5" />
+                <motion.span
+                  animate={{
+                    rotate: isInputEmpty ? 0 : -90,
+                  }}
+                  transition={{
+                    type: "spring",
+                    stiffness: 500,
+                    damping: 20,
+                  }}
+                >
+                  <ChevronsRight className="w-5 h-5" />
+                </motion.span>
               </Button>
             )}
           </div>

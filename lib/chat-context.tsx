@@ -199,6 +199,7 @@ export function ChatProvider({ children }: ChatProviderProps) {
                   id: `action-${Date.now()}`,
                   action: parsedEvent.action,
                   status: "pending",
+                  model,
                 };
 
                 setMessages((prev) => [...prev, actionMessage]);
@@ -210,8 +211,9 @@ export function ChatProvider({ children }: ChatProviderProps) {
                 assistantMessage = parsedEvent.content;
                 const reasoningMessage: AssistantChatMessage = {
                   role: "assistant",
-                  id: `assistant-${Date.now()}`,
+                  id: `assistant-${Date.now()}-${messages.length}`,
                   content: assistantMessage,
+                  model,
                 };
                 setMessages((prev) => [...prev, reasoningMessage]);
               }

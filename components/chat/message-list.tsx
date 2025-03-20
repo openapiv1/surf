@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useRef, useEffect } from "react";
-import { ChatMessage } from "./chat-message";
+import { ChatMessage } from "@/components/chat/message";
 import { ChatMessage as ChatMessageType } from "@/types/chat";
 import { cn } from "@/lib/utils";
 

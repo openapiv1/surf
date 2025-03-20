@@ -1,7 +1,7 @@
 /**
  * Type definitions for Surf Computer API and SSE events
  */
-import { ComputerAction } from "@/lib/streaming/anthropic";
+import { ComputerAction } from "@/types/anthropic";
 import { ResponseComputerToolCall } from "openai/resources/responses/responses.mjs";
 
 /**
