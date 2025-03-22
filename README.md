@@ -1,6 +1,7 @@
-# 🏄 Surf - OpenAI's Computer Use Agent + E2B Desktop
+![E2B Surf Preview Light](/readme-assets/surf-light.png#gh-light-mode-only)
+![E2B Surf Preview Dark](/readme-assets/surf-dark.png#gh-dark-mode-only)
 
-![CUSE Agent Demo](./assets/preview.png)
+# 🏄 Surf - OpenAI's Computer Use Agent + E2B Desktop
 
 A Next.js application that allows AI to interact with a virtual desktop environment. This project integrates [E2B's desktop sandbox](https://github.com/e2b-dev/desktop) with OpenAI's API to create an AI agent that can perform tasks on a virtual computer through natural language instructions.
 
