@@ -264,7 +264,7 @@ export class OpenAIComputerStreamer
         yield {
           type: SSEEventType.ERROR,
           content:
-            "Our usage quota for the day has run out. Please visit GitHub, self host the repository and use your own API keys to continue.",
+            "Our usage quota ran out for this month. Please visit GitHub, self host the repository and use your own API keys to continue.",
         };
         yield {
           type: SSEEventType.DONE,
