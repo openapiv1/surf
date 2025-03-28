@@ -259,6 +259,18 @@ export class OpenAIComputerStreamer
       }
     } catch (error) {
       logError("OPENAI_STREAMER", error);
+      if (error instanceof OpenAI.APIError && error.status === 429) {
+        // since hitting rate limits is not expected, we optimistically assume we hit our quota limit (both have the same status code)
+        yield {
+          type: SSEEventType.ERROR,
+          content:
+            "Our usage quota for the day has run out. Please visit GitHub, self host the repository and use your own API keys to continue.",
+        };
+        yield {
+          type: SSEEventType.DONE,
+        };
+        return;
+      }
       yield {
         type: SSEEventType.ERROR,
         content: "An error occurred with the AI service. Please try again.",
