@@ -7,7 +7,7 @@ import { ResponseComputerToolCall } from "openai/resources/responses/responses.m
 /**
  * Model types supported by Surf
  */
-export type ComputerModel = "openai" | "anthropic";
+export type ComputerModel = "openai" | "anthropic" | "qwen";
 
 /**
  * SSE event types for client communication
@@ -37,6 +37,14 @@ export interface ActionEvent<T extends ComputerModel> extends BaseSSEEvent {
   action: T extends "openai"
     ? ResponseComputerToolCall["action"]
     : ComputerAction;
+}
+
+/**
+ * Update event with partial content from AI streaming
+ */
+export interface UpdateEvent extends BaseSSEEvent {
+  type: SSEEventType.UPDATE;
+  content: string;
 }
 
 /**
@@ -84,6 +92,7 @@ export interface ActionCompletedEvent extends BaseSSEEvent {
  */
 export type SSEEvent<T extends ComputerModel = ComputerModel> =
   | ActionEvent<T>
+  | UpdateEvent
   | ReasoningEvent
   | DoneEvent
   | ErrorEvent
