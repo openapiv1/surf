@@ -1,6 +1,6 @@
 import { Sandbox } from "@e2b/desktop";
 import { createMistral } from "@ai-sdk/mistral";
-import { generateText, CoreMessage } from "ai";
+import { generateText, CoreMessage, tool } from "ai";
 import { SSEEventType, SSEEvent } from "@/types/api";
 import {
   ComputerInteractionStreamerFacade,
@@ -9,6 +9,7 @@ import {
 import { ActionResponse } from "@/types/api";
 import { logDebug, logError, logWarning } from "../logger";
 import { ResolutionScaler } from "./resolution";
+import { z } from "zod";
 
 const INSTRUCTIONS = `
 You are Surf, a helpful assistant that can use a computer to help the user with their tasks.
@@ -211,70 +212,30 @@ export class MistralComputerStreamer
         }
       }
 
-      // Define tools for Mistral
+      // Define tools for Mistral using the AI SDK tool helper
       const tools = {
-        computer_use: {
+        computer_use: tool({
           description: "Use the computer to perform actions like clicking, typing, taking screenshots, etc.",
-          parameters: {
-            type: "object",
-            properties: {
-              action: {
-                type: "string",
-                enum: [
-                  "take_screenshot", "click", "right_click", "double_click", 
-                  "type", "key", "scroll", "move", "drag"
-                ],
-                description: "The action to perform"
-              },
-              coordinate: {
-                type: "array",
-                items: { type: "number" },
-                description: "X,Y coordinates for actions that require positioning"
-              },
-              start_coordinate: {
-                type: "array", 
-                items: { type: "number" },
-                description: "Starting coordinates for drag action"
-              },
-              end_coordinate: {
-                type: "array",
-                items: { type: "number" }, 
-                description: "Ending coordinates for drag action"
-              },
-              text: {
-                type: "string",
-                description: "Text to type"
-              },
-              key: {
-                type: "string",
-                description: "Key to press (e.g., 'Enter', 'Tab', 'Escape')"
-              },
-              direction: {
-                type: "string",
-                enum: ["up", "down"],
-                description: "Scroll direction"
-              },
-              amount: {
-                type: "number",
-                description: "Scroll amount"
-              }
-            },
-            required: ["action"]
-          }
-        },
-        bash: {
+          parameters: z.object({
+            action: z.enum([
+              "take_screenshot", "click", "right_click", "double_click", 
+              "type", "key", "scroll", "move", "drag"
+            ]).describe("The action to perform"),
+            coordinate: z.array(z.number()).optional().describe("X,Y coordinates for actions that require positioning"),
+            start_coordinate: z.array(z.number()).optional().describe("Starting coordinates for drag action"),
+            end_coordinate: z.array(z.number()).optional().describe("Ending coordinates for drag action"),
+            text: z.string().optional().describe("Text to type"),
+            key: z.string().optional().describe("Key to press (e.g., 'Enter', 'Tab', 'Escape')"),
+            direction: z.enum(["up", "down"]).optional().describe("Scroll direction"),
+            amount: z.number().optional().describe("Scroll amount")
+          }),
+        }),
+        bash: tool({
           description: "Execute bash commands in the terminal",
-          parameters: {
-            type: "object", 
-            properties: {
-              command: {
-                type: "string",
-                description: "The bash command to execute"
-              }
-            },
-            required: ["command"]
-          }
-        }
+          parameters: z.object({
+            command: z.string().describe("The bash command to execute")
+          }),
+        })
       };
 
       let conversationComplete = false;
