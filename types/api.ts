@@ -7,7 +7,7 @@ import { ResponseComputerToolCall } from "openai/resources/responses/responses.m
 /**
  * Model types supported by Surf
  */
-export type ComputerModel = "openai" | "anthropic" | "qwen";
+export type ComputerModel = "openai" | "anthropic" | "qwen" | "mistral";
 
 /**
  * SSE event types for client communication
