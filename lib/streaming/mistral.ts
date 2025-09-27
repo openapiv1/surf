@@ -1,6 +1,14 @@
 import { Sandbox } from "@e2b/desktop";
 import { createMistral } from "@ai-sdk/mistral";
-import { generateText, CoreMessage } from "ai";
+import {
+  CoreMessage,
+  ToolCallPart,
+  ToolResultPart,
+  convertToCoreMessages,
+  generateText,
+  tool,
+} from "ai";
+import { z } from "zod";
 import { SSEEventType, SSEEvent } from "@/types/api";
 import {
   ComputerInteractionStreamerFacade,
@@ -9,13 +17,17 @@ import {
 import { ActionResponse } from "@/types/api";
 import { logDebug, logError, logWarning } from "../logger";
 import { ResolutionScaler } from "./resolution";
+import {
+  PixtralBashCommand,
+  PixtralComputerToolAction,
+} from "@/types/mistral";
 
 const INSTRUCTIONS = `
 You are Surf, a helpful assistant that can use a computer to help the user with their tasks.
 You can use the computer to search the web, write code, and more.
 
 Surf is built by E2B, which provides an open source isolated virtual computer in the cloud made for AI use cases.
-This application integrates E2B's desktop sandbox with Mistral's Pixtral AI to create an AI agent that can perform tasks
+This application integrates E2B's desktop sandbox with Mistral's Pixtral-large-latest model to create an AI agent that can perform tasks
 on a virtual computer through natural language instructions.
 
 The screenshots that you receive are from a running sandbox instance, allowing you to see and interact with a real
@@ -34,8 +46,10 @@ IMPORTANT NOTES:
    Break down complex tasks into steps and execute them fully.
 
 You have access to these tools:
-- computer_use: Interact with the desktop (click, type, scroll, etc.)
+- computer_use: Interact with the desktop (click, type, scroll, capture screenshots, etc.)
 - bash: Execute bash commands in the terminal
+
+Always use the computer_use tool for desktop interactions and the bash tool for terminal work so that Pixtral can fully control the sandbox.
 
 Always analyze the screenshot first to understand the current state, then take the most appropriate action to help the user achieve their goal.
 `;
@@ -65,7 +79,7 @@ export class MistralComputerStreamer
   }
 
   async executeAction(
-    action: any
+    action: PixtralComputerToolAction
   ): Promise<ActionResponse | void> {
     const desktop = this.desktop;
     
@@ -73,10 +87,10 @@ export class MistralComputerStreamer
 
     switch (action.action) {
       case "take_screenshot": {
-        const screenshot = await desktop.screenshot();
-        const screenshotBase64 = Buffer.from(screenshot).toString('base64');
+        const screenshot = await this.resolutionScaler.takeScreenshot();
+        const screenshotBase64 = screenshot.toString("base64");
         return {
-          action: "screenshot",
+          action: "take_screenshot",
           data: {
             type: "computer_screenshot",
             image_url: `data:image/png;base64,${screenshotBase64}`,
@@ -169,9 +183,9 @@ export class MistralComputerStreamer
     }
   }
 
-  async executeBashCommand(command: any): Promise<string> {
+  async executeBashCommand(command: PixtralBashCommand): Promise<string> {
     const desktop = this.desktop;
-    
+
     try {
       logDebug("Executing bash command:", command);
       const result = await desktop.commands.run(command.command);
@@ -188,162 +202,239 @@ export class MistralComputerStreamer
     const { messages, signal } = props;
 
     try {
-      const modelResolution = this.resolutionScaler.getScaledResolution();
+      const formattedMessages: CoreMessage[] = convertToCoreMessages(messages);
 
-      // Take initial screenshot
-      const screenshot = await this.desktop.screenshot();
-      const screenshotBase64 = Buffer.from(screenshot).toString('base64');
+      const initialScreenshot = await this.resolutionScaler.takeScreenshot();
+      const initialScreenshotBase64 = initialScreenshot.toString("base64");
 
-      // Convert messages to format expected by AI SDK
-      const formattedMessages: CoreMessage[] = messages.map(msg => ({
-        role: msg.role as "user" | "assistant",
-        content: msg.content,
-      }));
-
-      // Add initial screenshot to the latest user message
       if (formattedMessages.length > 0) {
         const lastMessage = formattedMessages[formattedMessages.length - 1];
-        if (lastMessage.role === "user" && typeof lastMessage.content === "string") {
-          lastMessage.content = [
-            { type: "text", text: lastMessage.content },
-            { 
-              type: "image", 
-              image: `data:image/png;base64,${screenshotBase64}` 
-            }
-          ];
+
+        if (lastMessage.role === "user") {
+          if (typeof lastMessage.content === "string") {
+            lastMessage.content = [
+              { type: "text", text: lastMessage.content },
+              {
+                type: "image",
+                image: `data:image/png;base64,${initialScreenshotBase64}`,
+              },
+            ];
+          }
         }
       }
 
-      // Define tools for Mistral
       const tools = {
-        computer_use: {
-          description: "Use the computer to perform actions like clicking, typing, taking screenshots, etc.",
-          parameters: {
-            type: "object",
-            properties: {
-              action: {
-                type: "string",
-                enum: [
-                  "take_screenshot", "click", "right_click", "double_click", 
-                  "type", "key", "scroll", "move", "drag"
-                ],
-                description: "The action to perform"
-              },
-              coordinate: {
-                type: "array",
-                items: { type: "number" },
-                description: "X,Y coordinates for actions that require positioning"
-              },
-              start_coordinate: {
-                type: "array", 
-                items: { type: "number" },
-                description: "Starting coordinates for drag action"
-              },
-              end_coordinate: {
-                type: "array",
-                items: { type: "number" }, 
-                description: "Ending coordinates for drag action"
-              },
-              text: {
-                type: "string",
-                description: "Text to type"
-              },
-              key: {
-                type: "string",
-                description: "Key to press (e.g., 'Enter', 'Tab', 'Escape')"
-              },
-              direction: {
-                type: "string",
-                enum: ["up", "down"],
-                description: "Scroll direction"
-              },
-              amount: {
-                type: "number",
-                description: "Scroll amount"
-              }
-            },
-            required: ["action"]
-          }
-        },
-        bash: {
-          description: "Execute bash commands in the terminal",
-          parameters: {
-            type: "object", 
-            properties: {
-              command: {
-                type: "string",
-                description: "The bash command to execute"
-              }
-            },
-            required: ["command"]
-          }
-        }
+        computer_use: tool({
+          description:
+            "Control the remote desktop by clicking, typing, scrolling or capturing screenshots.",
+          parameters: z.object({
+            action: z.enum([
+              "take_screenshot",
+              "click",
+              "right_click",
+              "double_click",
+              "type",
+              "key",
+              "scroll",
+              "move",
+              "drag",
+            ]),
+            coordinate: z.tuple([z.number(), z.number()]).optional(),
+            start_coordinate: z.tuple([z.number(), z.number()]).optional(),
+            end_coordinate: z.tuple([z.number(), z.number()]).optional(),
+            text: z.string().optional(),
+            key: z.string().optional(),
+            direction: z.enum(["up", "down"]).optional(),
+            amount: z.number().optional(),
+          }),
+        }),
+        bash: tool({
+          description: "Run a Bash command in the sandbox terminal and capture the result.",
+          parameters: z.object({
+            command: z.string().min(1, "Command is required"),
+          }),
+        }),
+      } as const;
+
+      const createScreenshotResponse = async (
+        actionName: string
+      ): Promise<ActionResponse> => {
+        const screenshotBuffer = await this.resolutionScaler.takeScreenshot();
+        const screenshotBase64 = screenshotBuffer.toString("base64");
+        return {
+          action: actionName,
+          data: {
+            type: "computer_screenshot",
+            image_url: `data:image/png;base64,${screenshotBase64}`,
+          },
+        };
       };
 
-      let conversationComplete = false;
-      let currentResult: any = null;
-      
-      while (!conversationComplete && !signal.aborted) {
-        currentResult = await generateText({
+      const extractImageData = (imageUrl: string) =>
+        imageUrl.includes(",") ? imageUrl.split(",")[1] : imageUrl;
+
+      const maxIterations = 20;
+      let iteration = 0;
+
+      while (!signal.aborted && iteration < maxIterations) {
+        iteration += 1;
+
+        const currentResult = await generateText({
           model: this.mistral.languageModel("pixtral-large-latest"),
           messages: formattedMessages,
           tools,
-          maxSteps: 5,
+          maxSteps: 1,
           system: this.instructions,
         });
 
-        // Stream the text content
-        if (currentResult.text) {
+        if (currentResult.text && currentResult.text.trim().length > 0) {
           yield {
             type: SSEEventType.UPDATE,
             content: currentResult.text,
           };
+
+          formattedMessages.push({
+            role: "assistant",
+            content: currentResult.text,
+          } as CoreMessage);
         }
 
-        // Process tool calls
-        if (currentResult.steps) {
-          for (const step of currentResult.steps) {
-            if (step.toolCalls) {
-              for (const toolCall of step.toolCalls) {
-                yield {
-                  type: SSEEventType.ACTION,
-                  action: toolCall.args,
-                };
+        if (currentResult.toolCalls.length === 0) {
+          yield {
+            type: SSEEventType.DONE,
+            content: currentResult.text || "Task completed",
+          };
+          return;
+        }
 
-                if (toolCall.toolName === "computer_use") {
-                  const actionResponse = await this.executeAction(toolCall.args);
-                  
-                  if (actionResponse) {
-                    // Tool returned a screenshot - just store as text for now
-                    formattedMessages.push({
-                      role: "assistant",
-                      content: `Executed ${(toolCall.args as any).action} action. Screenshot updated.`
-                    });
-                  }
-                } else if (toolCall.toolName === "bash") {
-                  const commandResult = await this.executeBashCommand(toolCall.args);
-                  formattedMessages.push({
-                    role: "assistant", 
-                    content: `Command executed: ${commandResult}`
-                  });
-                }
+        for (const toolCall of currentResult.toolCalls) {
+          if (signal.aborted) {
+            break;
+          }
 
-                yield {
-                  type: SSEEventType.ACTION_COMPLETED,
-                };
-              }
-            }
+          if (toolCall.toolName === "computer_use") {
+            const action = toolCall.args as PixtralComputerToolAction;
+
+            yield {
+              type: SSEEventType.ACTION,
+              action,
+            };
+
+            const toolCallPart: ToolCallPart = {
+              type: "tool-call",
+              toolCallId: toolCall.toolCallId,
+              toolName: toolCall.toolName,
+              args: action,
+            };
+
+            formattedMessages.push({
+              role: "assistant",
+              content: [toolCallPart],
+            } as CoreMessage);
+
+            const actionResponse =
+              (await this.executeAction(action)) ??
+              (await createScreenshotResponse(action.action));
+
+            const imageData = extractImageData(
+              actionResponse.data.image_url
+            );
+
+            const toolResult: ToolResultPart = {
+              type: "tool-result",
+              toolCallId: toolCall.toolCallId,
+              toolName: toolCall.toolName,
+              result: actionResponse,
+              experimental_content: [
+                {
+                  type: "image",
+                  data: imageData,
+                  mimeType: "image/png",
+                },
+              ],
+            };
+
+            formattedMessages.push({
+              role: "tool",
+              content: [toolResult],
+            } as CoreMessage);
+
+            yield {
+              type: SSEEventType.ACTION_COMPLETED,
+            };
+          } else if (toolCall.toolName === "bash") {
+            const bashArgs = toolCall.args as PixtralBashCommand;
+
+            yield {
+              type: SSEEventType.ACTION,
+              action: { action: "bash", ...bashArgs },
+            };
+
+            const toolCallPart: ToolCallPart = {
+              type: "tool-call",
+              toolCallId: toolCall.toolCallId,
+              toolName: toolCall.toolName,
+              args: bashArgs,
+            };
+
+            formattedMessages.push({
+              role: "assistant",
+              content: [toolCallPart],
+            } as CoreMessage);
+
+            const commandResult = await this.executeBashCommand(bashArgs);
+            const screenshotResponse = await createScreenshotResponse("bash");
+            const imageData = extractImageData(
+              screenshotResponse.data.image_url
+            );
+
+            const toolResult: ToolResultPart = {
+              type: "tool-result",
+              toolCallId: toolCall.toolCallId,
+              toolName: toolCall.toolName,
+              result: {
+                output: commandResult,
+                screenshot: screenshotResponse.data.image_url,
+              },
+              experimental_content: [
+                {
+                  type: "text",
+                  text: commandResult,
+                },
+                {
+                  type: "image",
+                  data: imageData,
+                  mimeType: "image/png",
+                },
+              ],
+            };
+
+            formattedMessages.push({
+              role: "tool",
+              content: [toolResult],
+            } as CoreMessage);
+
+            yield {
+              type: SSEEventType.ACTION_COMPLETED,
+            };
+          } else {
+            logWarning("Unknown tool call for Mistral:", toolCall);
           }
         }
-
-        conversationComplete = true; // For now, complete after one iteration
       }
 
-      yield {
-        type: SSEEventType.DONE,
-        content: currentResult?.text || "Task completed",
-      };
-
+      if (signal.aborted) {
+        yield {
+          type: SSEEventType.DONE,
+          content: "Generation stopped by user",
+        };
+      } else if (iteration >= maxIterations) {
+        yield {
+          type: SSEEventType.ERROR,
+          content:
+            "Reached maximum number of Pixtral tool iterations. Please try again.",
+        };
+      }
     } catch (error) {
       logError("Error in Mistral stream:", error);
       yield {
