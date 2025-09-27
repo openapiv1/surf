@@ -1,9 +1,9 @@
 ![E2B Surf Preview Light](/readme-assets/surf-light.png#gh-light-mode-only)
 ![E2B Surf Preview Dark](/readme-assets/surf-dark.png#gh-dark-mode-only)
 
-# 🏄 Surf - Qwen AI Computer Use Agent + E2B Desktop
+# 🏄 Surf - Grok Computer Use Agent + E2B Desktop
 
-A Next.js application that allows Qwen AI to interact with a virtual desktop environment. This project integrates [E2B's desktop sandbox](https://github.com/e2b-dev/desktop) with Qwen3-VL-Plus from DashScope to create an AI agent that can perform tasks on a virtual computer through natural language instructions.
+A Next.js application that allows Grok from xAI to interact with a virtual desktop environment. This project integrates [E2B's desktop sandbox](https://github.com/e2b-dev/desktop) with the **grok-4-fast-non-reasoning** model to create an AI agent that can perform tasks on a virtual computer through natural language instructions.
 
 [E2B](https://e2b.dev) is an open source isolated virtual computer in the cloud made for AI use cases.
 
@@ -26,7 +26,7 @@ The application consists of several key components:
 
 1. **Frontend UI (Next.js)**: Provides the user interface with a virtual desktop view and chat interface
 2. [**E2B Desktop Sandbox**](https://github.com/e2b-dev/desktop): Creates and manages virtual desktop environments
-3. **Qwen3-VL-Plus AI**: Processes user instructions and generates actions for the AI agent using DashScope's vision-language model
+3. **Grok 4 Fast Non Reasoning**: Processes user instructions and generates actions for the AI agent using xAI's Grok API with computer and bash tools
 4. **Streaming API**: Handles real-time communication between the frontend and backend
 
 ### Core Flow
@@ -34,7 +34,7 @@ The application consists of several key components:
 1. User starts a new sandbox instance
 2. E2B creates a virtual desktop and provides a URL for streaming
 3. User sends instructions via the chat interface
-4. Backend processes the instructions using Qwen3-VL-Plus from DashScope
+4. Backend processes the instructions using xAI's Grok model with dedicated computer and bash tools
 5. AI analyzes screenshots and generates actions (clicks, typing, etc.) to perform on the virtual desktop
 6. Actions are executed on the sandbox and streamed back to the frontend
 7. The process repeats as the user continues to provide instructions
@@ -46,7 +46,7 @@ Before starting, you'll need:
 1. [Node.js](https://nodejs.org/) (version specified in package.json)
 2. [npm](https://www.npmjs.com/) (comes with Node.js)
 3. An [E2B API key](https://e2b.dev/docs/getting-started/api-key)
-4. A [DashScope API key](https://help.aliyun.com/zh/model-studio/) for Qwen3-VL-Plus access
+4. An [xAI API key](https://x.ai/) for Grok access
 
 ## Setup Instructions
 
@@ -67,7 +67,7 @@ Create a `.env.local` file in the root directory based on the provided `.env.exa
 
 ```env
 E2B_API_KEY=your_e2b_api_key
-DASHSCOPE_API_KEY=your_dashscope_api_key
+XAI_API_KEY=your_xai_api_key
 ```
 
 4. **Start the development server**
@@ -103,7 +103,7 @@ Navigate to [http://localhost:3000](http://localhost:3000) in your browser.
 ## Features
 
 - **Virtual Desktop Environment**: Runs a Linux-based desktop in a sandbox
-- **Qwen AI Integration**: Uses Qwen3-VL-Plus from DashScope for intelligent computer interactions
+- **Grok Integration**: Uses xAI's grok-4-fast-non-reasoning model with dedicated computer and bash tools for intelligent sandbox control
 - **Vision Capabilities**: AI can analyze screenshots and understand visual interfaces
 - **Real-Time Streaming**: Shows AI actions and responses as they happen
 - **Chat Interface**: Provides a conversational interface for interacting with the AI
@@ -118,7 +118,8 @@ The application uses several key dependencies:
 
 - **Next.js**: React framework for the frontend
 - **@e2b/desktop**: SDK for creating and managing desktop sandbox environments
-- **OpenAI**: SDK for interacting with DashScope's OpenAI-compatible API
+- **OpenAI**: SDK for interacting with OpenAI-compatible APIs (used for legacy integrations)
+- **@ai-sdk/xai**: Provider for accessing xAI's Grok models
 - **Tailwind CSS**: Utility-first CSS framework for styling
 - **Framer Motion**: Library for animations
 
@@ -137,9 +138,9 @@ See `package.json` for a complete list of dependencies.
 ## Troubleshooting
 
 - **Sandbox not starting**: Verify your E2B API key is correct in `.env.local`
-- **AI not responding**: Check that your DashScope API key is valid and has access to Qwen3-VL-Plus
+- **AI not responding**: Verify that your xAI API key is valid and has access to Grok
 - **Actions not working**: Ensure the sandbox is running and the AI has proper instructions
-- **Network issues**: Ensure your environment can access both E2B API and DashScope endpoints
+- **Network issues**: Ensure your environment can access both E2B API and xAI endpoints
 
 ## Contributing
 
