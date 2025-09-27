@@ -1,5 +1,9 @@
 import { Sandbox } from "@e2b/desktop";
-import { SSEEvent, ActionResponse } from "@/types/api";
+import {
+  SSEEvent,
+  ActionExecutionResult,
+  ActionResponse,
+} from "@/types/api";
 import { ResolutionScaler } from "./resolution";
 import { logDebug } from "../logger";
 
@@ -22,7 +26,7 @@ export abstract class ComputerInteractionStreamerFacade {
   ): AsyncGenerator<SSEEvent>;
 
   // action type is specific to the streamer implementation
-  abstract executeAction(action: unknown): Promise<ActionResponse | void>;
+  abstract executeAction(action: unknown): Promise<ActionExecutionResult>;
 }
 
 export function createStreamingResponse(
