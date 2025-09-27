@@ -82,9 +82,20 @@ export class GrokComputerStreamer
       case "click":
       case "right_click":
       case "double_click": {
+ codex/change-ai-model-to-grok-4-fast-non-reasoning-96lw3v
+        if (!action.coordinate) {
+          logWarning("Grok click action missing coordinate", action);
+          break;
+        }
+
+        const [x, y] = this.resolutionScaler.scaleToOriginalSpace([
+          action.coordinate.x,
+          action.coordinate.y,
+
         const [x, y] = this.resolutionScaler.scaleToOriginalSpace([
           action.coordinate[0],
           action.coordinate[1],
+ main
         ]);
 
         if (action.action === "click") {
@@ -105,9 +116,20 @@ export class GrokComputerStreamer
         break;
       }
       case "scroll": {
+ codex/change-ai-model-to-grok-4-fast-non-reasoning-96lw3v
+        if (!action.coordinate) {
+          logWarning("Grok scroll action missing coordinate", action);
+          break;
+        }
+
+        const [x, y] = this.resolutionScaler.scaleToOriginalSpace([
+          action.coordinate.x,
+          action.coordinate.y,
+
         const [x, y] = this.resolutionScaler.scaleToOriginalSpace([
           action.coordinate[0],
           action.coordinate[1],
+ main
         ]);
 
         await desktop.moveMouse(x, y);
@@ -118,14 +140,38 @@ export class GrokComputerStreamer
         break;
       }
       case "move": {
+ codex/change-ai-model-to-grok-4-fast-non-reasoning-96lw3v
+        if (!action.coordinate) {
+          logWarning("Grok move action missing coordinate", action);
+          break;
+        }
+
+        const [x, y] = this.resolutionScaler.scaleToOriginalSpace([
+          action.coordinate.x,
+          action.coordinate.y,
+
         const [x, y] = this.resolutionScaler.scaleToOriginalSpace([
           action.coordinate[0],
           action.coordinate[1],
+ main
         ]);
         await desktop.moveMouse(x, y);
         break;
       }
-      case "drag": {
+      case "drag": { codex/change-ai-model-to-grok-4-fast-non-reasoning-96lw3v
+        if (!action.start_coordinate || !action.end_coordinate) {
+          logWarning("Grok drag action missing coordinates", action);
+          break;
+        }
+
+        const startCoordinate = this.resolutionScaler.scaleToOriginalSpace([
+          action.start_coordinate.x,
+          action.start_coordinate.y,
+        ]);
+        const endCoordinate = this.resolutionScaler.scaleToOriginalSpace([
+          action.end_coordinate.x,
+          action.end_coordinate.y,
+
         const startCoordinate = this.resolutionScaler.scaleToOriginalSpace([
           action.start_coordinate[0],
           action.start_coordinate[1],
@@ -133,6 +179,7 @@ export class GrokComputerStreamer
         const endCoordinate = this.resolutionScaler.scaleToOriginalSpace([
           action.end_coordinate[0],
           action.end_coordinate[1],
+ main
         ]);
 
         await desktop.drag(startCoordinate, endCoordinate);
@@ -179,6 +226,14 @@ export class GrokComputerStreamer
         }
       }
 
+ codex/change-ai-model-to-grok-4-fast-non-reasoning-96lw3v
+      const coordinateSchema = z.object({
+        x: z.number(),
+        y: z.number(),
+      });
+
+
+ main
       const tools = {
         computer: tool({
           description:
@@ -195,9 +250,15 @@ export class GrokComputerStreamer
               "move",
               "drag",
             ]),
+ codex/change-ai-model-to-grok-4-fast-non-reasoning-96lw3v
+            coordinate: coordinateSchema.optional(),
+            start_coordinate: coordinateSchema.optional(),
+            end_coordinate: coordinateSchema.optional(),
+
             coordinate: z.tuple([z.number(), z.number()]).optional(),
             start_coordinate: z.tuple([z.number(), z.number()]).optional(),
             end_coordinate: z.tuple([z.number(), z.number()]).optional(),
+ main
             text: z.string().optional(),
             key: z.string().optional(),
             direction: z.enum(["up", "down"]).optional(),
