@@ -49,7 +49,7 @@ export function ChatProvider({ children }: ChatProviderProps) {
   const onSandboxCreatedRef = useRef<
     ((sandboxId: string, vncUrl: string) => void) | undefined
   >(undefined);
-  const [model, setModel] = useState<ComputerModel>("qwen");
+  const [model, setModel] = useState<ComputerModel>("mistral");
 
   const parseSSEEvent = (data: string): ParsedSSEEvent<typeof model> | null => {
     try {

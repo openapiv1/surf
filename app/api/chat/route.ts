@@ -7,6 +7,7 @@ import {
 import { SANDBOX_TIMEOUT_MS } from "@/lib/config";
 import { OpenAIComputerStreamer } from "@/lib/streaming/openai";
 import { QwenComputerStreamer } from "@/lib/streaming/qwen";
+import { MistralComputerStreamer } from "@/lib/streaming/mistral";
 import { logError } from "@/lib/logger";
 import { ResolutionScaler } from "@/lib/streaming/resolution";
 
@@ -21,6 +22,8 @@ class StreamerFactory {
     const resolutionScaler = new ResolutionScaler(desktop, resolution);
 
     switch (model) {
+      case "mistral":
+        return new MistralComputerStreamer(desktop, resolutionScaler);
       case "qwen":
         return new QwenComputerStreamer(desktop, resolutionScaler);
       case "anthropic":
@@ -45,7 +48,7 @@ export async function POST(request: Request) {
     messages,
     sandboxId,
     resolution,
-    model = "qwen",
+    model = "mistral",
   } = await request.json();
 
   const apiKey = process.env.E2B_API_KEY;
