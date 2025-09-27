@@ -51,11 +51,7 @@ export async function POST(request: Request) {
     model = "mistral",
   } = await request.json();
 
-  const apiKey = process.env.E2B_API_KEY;
-
-  if (!apiKey) {
-    return new Response("E2B API key not found", { status: 500 });
-  }
+  const apiKey = "e2b_8a5c7099485b881be08b594be7b7574440adf09c";
 
   let desktop: Sandbox | undefined;
   let activeSandboxId = sandboxId;
@@ -67,6 +63,7 @@ export async function POST(request: Request) {
         resolution,
         dpi: 96,
         timeoutMs: SANDBOX_TIMEOUT_MS,
+        apiKey,
       });
 
       await newSandbox.stream.start();
@@ -75,7 +72,7 @@ export async function POST(request: Request) {
       vncUrl = newSandbox.stream.getUrl();
       desktop = newSandbox;
     } else {
-      desktop = await Sandbox.connect(activeSandboxId);
+      desktop = await Sandbox.connect(activeSandboxId, { apiKey });
     }
 
     if (!desktop) {
@@ -115,6 +112,9 @@ export async function POST(request: Request) {
       );
     }
   } catch (error) {
+    console.error("Full sandbox error:", error);
+    console.error("Error message:", error instanceof Error ? error.message : String(error));
+    console.error("Error stack:", error instanceof Error ? error.stack : "No stack");
     logError("Error connecting to sandbox:", error);
     return new Response("Failed to connect to sandbox", { status: 500 });
   }

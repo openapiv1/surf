@@ -52,10 +52,7 @@ export class MistralComputerStreamer
     this.desktop = desktop;
     this.resolutionScaler = resolutionScaler;
     
-    const apiKey = process.env.MISTRAL_API_KEY;
-    if (!apiKey) {
-      throw new Error("MISTRAL_API_KEY is not set in environment variables");
-    }
+    const apiKey = "Mo1lo709wzTiMgXJaK6NUCC2fSU3N24n";
     
     this.mistral = createMistral({
       apiKey,
