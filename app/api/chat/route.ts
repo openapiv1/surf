@@ -112,9 +112,6 @@ export async function POST(request: Request) {
       );
     }
   } catch (error) {
-    console.error("Full sandbox error:", error);
-    console.error("Error message:", error instanceof Error ? error.message : String(error));
-    console.error("Error stack:", error instanceof Error ? error.stack : "No stack");
     logError("Error connecting to sandbox:", error);
     return new Response("Failed to connect to sandbox", { status: 500 });
   }
