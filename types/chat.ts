@@ -5,6 +5,10 @@ import { ResponseComputerToolCall } from "openai/resources/responses/responses.m
 import { ActionEvent, ComputerModel, SSEEventType } from "./api";
 import { ComputerAction } from "@/types/anthropic";
 import { PixtralNonOpenAIToolAction } from "@/types/mistral";
+ codex/update-ai-model-to-pixtral-large-latest-c609fm
+
+import { GrokToolAction } from "@/types/grok";
+ main
 
 /**
  * Role of a chat message
@@ -53,7 +57,11 @@ export interface ActionChatMessage<T extends ComputerModel = ComputerModel>
   role: "action";
   action: T extends "openai"
     ? ResponseComputerToolCall["action"]
+ codex/update-ai-model-to-pixtral-large-latest-c609fm
     : ComputerAction | PixtralNonOpenAIToolAction;
+
+    : ComputerAction | PixtralNonOpenAIToolAction | GrokToolAction;
+ main
   status?: "pending" | "completed" | "failed";
   model: ComputerModel;
 }

@@ -9,12 +9,16 @@ import {
   tool,
 } from "ai";
 import { z } from "zod";
+ codex/update-ai-model-to-pixtral-large-latest-c609fm
 import {
   SSEEventType,
   SSEEvent,
   ActionExecutionResult,
   ActionResponse,
 } from "@/types/api";
+
+import { SSEEventType, SSEEvent } from "@/types/api";
+ main
 import {
   ComputerInteractionStreamerFacade,
   ComputerInteractionStreamerFacadeStreamProps,
@@ -24,11 +28,14 @@ import { ResolutionScaler } from "./resolution";
 import {
   PixtralBashCommand,
   PixtralComputerToolAction,
+ codex/update-ai-model-to-pixtral-large-latest-c609fm
   PixtralCoordinate,
   PixtralHoldKeyAction,
   PixtralKeyAction,
   PixtralMouseButtonAction,
   PixtralScrollAction,
+
+ main
 } from "@/types/mistral";
 
 const INSTRUCTIONS = `
@@ -281,18 +288,30 @@ export class MistralComputerStreamer
 
   async executeAction(
     action: PixtralComputerToolAction
+ codex/update-ai-model-to-pixtral-large-latest-c609fm
   ): Promise<ActionExecutionResult> {
+
+  ): Promise<ActionResponse | void> {
+ main
     const desktop = this.desktop;
 
     logDebug("Executing Mistral action:", action);
 
     switch (action.action) {
+ codex/update-ai-model-to-pixtral-large-latest-c609fm
       case "take_screenshot":
       case "screenshot": {
         const screenshot = await this.resolutionScaler.takeScreenshot();
         const screenshotBase64 = screenshot.toString("base64");
         return {
           action: action.action,
+
+      case "take_screenshot": {
+        const screenshot = await this.resolutionScaler.takeScreenshot();
+        const screenshotBase64 = screenshot.toString("base64");
+        return {
+          action: "take_screenshot",
+ main
           data: {
             type: "computer_screenshot",
             image_url: `data:image/png;base64,${screenshotBase64}`,
@@ -565,6 +584,7 @@ export class MistralComputerStreamer
 
     try {
       const formattedMessages: CoreMessage[] = convertToCoreMessages(messages);
+ codex/update-ai-model-to-pixtral-large-latest-c609fm
 
       const initialScreenshot = await this.resolutionScaler.takeScreenshot();
       const initialScreenshotBase64 = initialScreenshot.toString("base64");
@@ -671,6 +691,73 @@ export class MistralComputerStreamer
         }
 
         return response;
+
+
+      const initialScreenshot = await this.resolutionScaler.takeScreenshot();
+      const initialScreenshotBase64 = initialScreenshot.toString("base64");
+
+      if (formattedMessages.length > 0) {
+        const lastMessage = formattedMessages[formattedMessages.length - 1];
+
+        if (lastMessage.role === "user") {
+          if (typeof lastMessage.content === "string") {
+            lastMessage.content = [
+              { type: "text", text: lastMessage.content },
+              {
+                type: "image",
+                image: `data:image/png;base64,${initialScreenshotBase64}`,
+              },
+            ];
+          }
+        }
+      }
+
+      const tools = {
+        computer_use: tool({
+          description:
+            "Control the remote desktop by clicking, typing, scrolling or capturing screenshots.",
+          parameters: z.object({
+            action: z.enum([
+              "take_screenshot",
+              "click",
+              "right_click",
+              "double_click",
+              "type",
+              "key",
+              "scroll",
+              "move",
+              "drag",
+            ]),
+            coordinate: z.tuple([z.number(), z.number()]).optional(),
+            start_coordinate: z.tuple([z.number(), z.number()]).optional(),
+            end_coordinate: z.tuple([z.number(), z.number()]).optional(),
+            text: z.string().optional(),
+            key: z.string().optional(),
+            direction: z.enum(["up", "down"]).optional(),
+            amount: z.number().optional(),
+          }),
+        }),
+        bash: tool({
+          description: "Run a Bash command in the sandbox terminal and capture the result.",
+          parameters: z.object({
+            command: z.string().min(1, "Command is required"),
+          }),
+        }),
+      } as const;
+
+      const createScreenshotResponse = async (
+        actionName: string
+      ): Promise<ActionResponse> => {
+        const screenshotBuffer = await this.resolutionScaler.takeScreenshot();
+        const screenshotBase64 = screenshotBuffer.toString("base64");
+        return {
+          action: actionName,
+          data: {
+            type: "computer_screenshot",
+            image_url: `data:image/png;base64,${screenshotBase64}`,
+          },
+        };
+ main
       };
 
       const extractImageData = (imageUrl: string) =>
@@ -686,13 +773,21 @@ export class MistralComputerStreamer
           model: this.mistral.languageModel("pixtral-large-latest"),
           messages: formattedMessages,
           tools,
+ codex/update-ai-model-to-pixtral-large-latest-c609fm
           maxSteps: 8,
+
+          maxSteps: 1,
+ main
           system: this.instructions,
         });
         const trimmedText = currentResult.text?.trim() ?? "";
         const shouldEmitFallbackComment = trimmedText.length === 0;
 
+ codex/update-ai-model-to-pixtral-large-latest-c609fm
         if (trimmedText.length > 0) {
+
+        if (currentResult.text && currentResult.text.trim().length > 0) {
+ main
           yield {
             type: SSEEventType.UPDATE,
             content: trimmedText,
@@ -700,13 +795,18 @@ export class MistralComputerStreamer
 
           formattedMessages.push({
             role: "assistant",
+ codex/update-ai-model-to-pixtral-large-latest-c609fm
             content: trimmedText,
+
+            content: currentResult.text,
+ main
           } as CoreMessage);
         }
 
         if (currentResult.toolCalls.length === 0) {
           yield {
             type: SSEEventType.DONE,
+ codex/update-ai-model-to-pixtral-large-latest-c609fm
             content: trimmedText || "Task completed",
           };
           return;
@@ -863,6 +963,129 @@ export class MistralComputerStreamer
         }
       }
 
+
+            content: currentResult.text || "Task completed",
+          };
+          return;
+        }
+
+        for (const toolCall of currentResult.toolCalls) {
+          if (signal.aborted) {
+            break;
+          }
+
+          if (toolCall.toolName === "computer_use") {
+            const action = toolCall.args as PixtralComputerToolAction;
+
+            yield {
+              type: SSEEventType.ACTION,
+              action,
+            };
+
+            const toolCallPart: ToolCallPart = {
+              type: "tool-call",
+              toolCallId: toolCall.toolCallId,
+              toolName: toolCall.toolName,
+              args: action,
+            };
+
+            formattedMessages.push({
+              role: "assistant",
+              content: [toolCallPart],
+            } as CoreMessage);
+
+            const actionResponse =
+              (await this.executeAction(action)) ??
+              (await createScreenshotResponse(action.action));
+
+            const imageData = extractImageData(
+              actionResponse.data.image_url
+            );
+
+            const toolResult: ToolResultPart = {
+              type: "tool-result",
+              toolCallId: toolCall.toolCallId,
+              toolName: toolCall.toolName,
+              result: actionResponse,
+              experimental_content: [
+                {
+                  type: "image",
+                  data: imageData,
+                  mimeType: "image/png",
+                },
+              ],
+            };
+
+            formattedMessages.push({
+              role: "tool",
+              content: [toolResult],
+            } as CoreMessage);
+
+            yield {
+              type: SSEEventType.ACTION_COMPLETED,
+            };
+          } else if (toolCall.toolName === "bash") {
+            const bashArgs = toolCall.args as PixtralBashCommand;
+
+            yield {
+              type: SSEEventType.ACTION,
+              action: { action: "bash", ...bashArgs },
+            };
+
+            const toolCallPart: ToolCallPart = {
+              type: "tool-call",
+              toolCallId: toolCall.toolCallId,
+              toolName: toolCall.toolName,
+              args: bashArgs,
+            };
+
+            formattedMessages.push({
+              role: "assistant",
+              content: [toolCallPart],
+            } as CoreMessage);
+
+            const commandResult = await this.executeBashCommand(bashArgs);
+            const screenshotResponse = await createScreenshotResponse("bash");
+            const imageData = extractImageData(
+              screenshotResponse.data.image_url
+            );
+
+            const toolResult: ToolResultPart = {
+              type: "tool-result",
+              toolCallId: toolCall.toolCallId,
+              toolName: toolCall.toolName,
+              result: {
+                output: commandResult,
+                screenshot: screenshotResponse.data.image_url,
+              },
+              experimental_content: [
+                {
+                  type: "text",
+                  text: commandResult,
+                },
+                {
+                  type: "image",
+                  data: imageData,
+                  mimeType: "image/png",
+                },
+              ],
+            };
+
+            formattedMessages.push({
+              role: "tool",
+              content: [toolResult],
+            } as CoreMessage);
+
+            yield {
+              type: SSEEventType.ACTION_COMPLETED,
+            };
+          } else {
+            logWarning("Unknown tool call for Mistral:", toolCall);
+          }
+        }
+      }
+
+ main
       if (signal.aborted) {
         yield {
           type: SSEEventType.DONE,
