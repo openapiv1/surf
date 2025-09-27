@@ -258,3 +258,35 @@ export const MistralLogo = ({
     </svg>
   );
 };
+
+export const GrokLogo = ({
+  size = 16,
+  className,
+}: {
+  size?: number;
+  className?: string;
+}) => {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      className={className}
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <circle
+        cx="12"
+        cy="12"
+        r="10"
+        stroke="currentColor"
+        strokeWidth="2"
+        fill="none"
+      />
+      <path
+        d="M16.5 13H12V11H19V16.5C17.857 18.709 15.285 20 12.75 20C8.469 20 5 16.642 5 12.5C5 8.358 8.469 5 12.75 5C15.029 5 17.037 5.999 18.398 7.54L16.96 8.806C15.985 7.703 14.455 7 12.75 7C9.53 7 6.906 9.507 6.906 12.5C6.906 15.493 9.53 18 12.75 18C14.269 18 15.646 17.275 16.5 16.095V13Z"
+        fill="currentColor"
+      />
+    </svg>
+  );
+};

@@ -3,12 +3,23 @@
  */
 import { ComputerAction } from "@/types/anthropic";
 import { PixtralNonOpenAIToolAction } from "@/types/mistral";
+import { GrokToolAction } from "@/types/grok";
 import { ResponseComputerToolCall } from "openai/resources/responses/responses.mjs";
 
 /**
  * Model types supported by Surf
  */
-export type ComputerModel = "openai" | "anthropic" | "qwen" | "mistral";
+export type ComputerModel =
+  | "openai"
+  | "anthropic"
+  | "qwen"
+  | "mistral"
+  | "grok";
+
+type NonOpenAIComputerAction =
+  | ComputerAction
+  | PixtralNonOpenAIToolAction
+  | GrokToolAction;
 
 /**
  * SSE event types for client communication
@@ -37,7 +48,7 @@ export interface ActionEvent<T extends ComputerModel> extends BaseSSEEvent {
   type: SSEEventType.ACTION;
   action: T extends "openai"
     ? ResponseComputerToolCall["action"]
-    : ComputerAction | PixtralNonOpenAIToolAction;
+    : NonOpenAIComputerAction;
 }
 
 /**
