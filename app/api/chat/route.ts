@@ -8,6 +8,7 @@ import { SANDBOX_TIMEOUT_MS } from "@/lib/config";
 import { OpenAIComputerStreamer } from "@/lib/streaming/openai";
 import { QwenComputerStreamer } from "@/lib/streaming/qwen";
 import { MistralComputerStreamer } from "@/lib/streaming/mistral";
+import { GrokComputerStreamer } from "@/lib/streaming/grok";
 import { logError } from "@/lib/logger";
 import { ResolutionScaler } from "@/lib/streaming/resolution";
 
@@ -24,14 +25,17 @@ class StreamerFactory {
     switch (model) {
       case "mistral":
         return new MistralComputerStreamer(desktop, resolutionScaler);
+      case "grok":
+        return new GrokComputerStreamer(desktop, resolutionScaler);
       case "qwen":
         return new QwenComputerStreamer(desktop, resolutionScaler);
       case "anthropic":
       // currently not implemented
       /* return new AnthropicComputerStreamer(desktop, resolutionScaler); */
       case "openai":
-      default:
         return new OpenAIComputerStreamer(desktop, resolutionScaler);
+      default:
+        return new GrokComputerStreamer(desktop, resolutionScaler);
     }
   }
 }
@@ -48,7 +52,7 @@ export async function POST(request: Request) {
     messages,
     sandboxId,
     resolution,
-    model = "mistral",
+    model = "grok",
   } = await request.json();
 
   const apiKey = process.env.E2B_API_KEY;

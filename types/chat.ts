@@ -5,6 +5,7 @@ import { ResponseComputerToolCall } from "openai/resources/responses/responses.m
 import { ActionEvent, ComputerModel, SSEEventType } from "./api";
 import { ComputerAction } from "@/types/anthropic";
 import { PixtralNonOpenAIToolAction } from "@/types/mistral";
+import { GrokToolAction } from "@/types/grok";
 
 /**
  * Role of a chat message
@@ -53,7 +54,7 @@ export interface ActionChatMessage<T extends ComputerModel = ComputerModel>
   role: "action";
   action: T extends "openai"
     ? ResponseComputerToolCall["action"]
-    : ComputerAction | PixtralNonOpenAIToolAction;
+    : ComputerAction | PixtralNonOpenAIToolAction | GrokToolAction;
   status?: "pending" | "completed" | "failed";
   model: ComputerModel;
 }
