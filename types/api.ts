@@ -3,7 +3,10 @@
  */
 import { ComputerAction } from "@/types/anthropic";
 import { PixtralNonOpenAIToolAction } from "@/types/mistral";
+ codex/update-ai-model-to-pixtral-large-latest-c609fm
+
 import { GrokToolAction } from "@/types/grok";
+ main
 import { ResponseComputerToolCall } from "openai/resources/responses/responses.mjs";
 
 /**
@@ -48,7 +51,11 @@ export interface ActionEvent<T extends ComputerModel> extends BaseSSEEvent {
   type: SSEEventType.ACTION;
   action: T extends "openai"
     ? ResponseComputerToolCall["action"]
+ codex/update-ai-model-to-pixtral-large-latest-c609fm
+    : ComputerAction | PixtralNonOpenAIToolAction;
+
     : NonOpenAIComputerAction;
+ main
 }
 
 /**
@@ -120,7 +127,17 @@ export type ActionResponse = {
     type: "computer_screenshot";
     image_url: string;
   };
+  metadata?: Record<string, unknown>;
 };
+
+export type ActionResponseMetadata = {
+  metadata?: Record<string, unknown>;
+};
+
+export type ActionExecutionResult =
+  | ActionResponse
+  | ActionResponseMetadata
+  | void;
 
 /**
  * Helper function to sleep for a specified duration

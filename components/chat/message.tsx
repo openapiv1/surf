@@ -20,7 +20,11 @@ import {
 import { useChat } from "@/lib/chat-context";
 import { Badge } from "../ui/badge";
 import { OpenAiLogo } from "@phosphor-icons/react";
+codex/update-ai-model-to-pixtral-large-latest-c609fm
+import { AnthropicLogo, MistralLogo, QwenLogo } from "../icons";
+
 import { AnthropicLogo, GrokLogo, MistralLogo, QwenLogo } from "../icons";
+
 
 const messageVariants = cva("", {
   variants: {
