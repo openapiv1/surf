@@ -39,7 +39,9 @@ IMPORTANT: When typing commands in the terminal, ALWAYS send a KEYPRESS ENTER ac
 
 IMPORTANT: When editing files, prefer to use Visual Studio Code (VS Code) as it provides a better editing experience with syntax highlighting, code completion, and other helpful features.
 
-You have access to a computer_use tool that allows you to:
+You have access to two powerful tools:
+
+1. computer_use tool that allows you to:
 - take_screenshot: Capture the current screen
 - click: Click at specific coordinates
 - type: Type text
@@ -47,6 +49,11 @@ You have access to a computer_use tool that allows you to:
 - scroll: Scroll in specific directions
 - move: Move the mouse cursor
 
+2. bash_command tool that allows you to:
+- Execute commands directly in the terminal without needing to open a terminal window first
+- Run scripts, install packages, manage files, etc.
+
+Use the computer_use tool for graphical interactions and the bash_command tool for direct command execution.
 Always analyze the screenshot first to understand the current state, then take the most appropriate action to help the user achieve their goal.
 `;
 
@@ -172,6 +179,17 @@ export class NovaComputerStreamer
     }
   }
 
+  async executeBashCommand(command: string): Promise<string> {
+    try {
+      logDebug("Executing Nova bash command:", command);
+      const result = await this.desktop.commands.run(command);
+      return result.stdout || result.stderr || "Command executed successfully";
+    } catch (error) {
+      logError("Error executing Nova bash command:", error);
+      return `Error: ${error}`;
+    }
+  }
+
   async *stream(
     props: ComputerInteractionStreamerFacadeStreamProps
   ): AsyncGenerator<SSEEvent<"nova">> {
@@ -267,6 +285,23 @@ export class NovaComputerStreamer
                 }
               },
               required: ["action"]
+            }
+          }
+        },
+        {
+          type: "function" as const,
+          function: {
+            name: "bash_command",
+            description: "Execute bash commands directly in the terminal",
+            parameters: {
+              type: "object",
+              properties: {
+                command: {
+                  type: "string",
+                  description: "The bash command to execute"
+                }
+              },
+              required: ["command"]
             }
           }
         }
@@ -395,6 +430,50 @@ export class NovaComputerStreamer
                   yield {
                     type: SSEEventType.ERROR,
                     content: `Error executing action: ${error}`,
+                  };
+                }
+              } else if (toolCall.function.name === "bash_command") {
+                try {
+                  const args = JSON.parse(toolCall.function.arguments);
+                  
+                  yield {
+                    type: SSEEventType.UPDATE,
+                    content: `Executing command: ${args.command}`,
+                  };
+
+                  const commandResult = await this.executeBashCommand(args.command);
+                  
+                  yield {
+                    type: SSEEventType.UPDATE,
+                    content: commandResult,
+                  };
+
+                  // Add the tool call and result to conversation
+                  (allMessages as any[]).push({
+                    role: "assistant",
+                    content: fullContent || "",
+                    tool_calls: [toolCall]
+                  });
+
+                  (allMessages as any[]).push({
+                    role: "tool",
+                    tool_call_id: toolCall.id,
+                    content: commandResult
+                  });
+
+                  // Take a screenshot after bash command
+                  const newScreenshot = await this.desktop.screenshot();
+                  const newScreenshotBase64 = Buffer.from(newScreenshot).toString('base64');
+                  (allMessages as any[]).push({
+                    role: "user",
+                    content: `Command executed. Current screen updated.`
+                  });
+
+                } catch (error) {
+                  logError("Error executing bash command:", error);
+                  yield {
+                    type: SSEEventType.ERROR,
+                    content: `Error executing bash command: ${error}`,
                   };
                 }
               }

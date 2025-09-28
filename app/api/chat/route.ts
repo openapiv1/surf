@@ -38,7 +38,7 @@ class StreamerFactory {
       case "openai":
         return new OpenAIComputerStreamer(desktop, resolutionScaler);
       default:
-        return new GrokComputerStreamer(desktop, resolutionScaler);
+        return new NovaComputerStreamer(desktop, resolutionScaler);
     }
   }
 }
@@ -55,7 +55,7 @@ export async function POST(request: Request) {
     messages,
     sandboxId,
     resolution,
-    model = "grok",
+    model = "nova",
   } = await request.json();
 
   const apiKey = process.env.E2B_API_KEY;
