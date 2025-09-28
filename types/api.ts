@@ -13,6 +13,7 @@ export type ComputerModel =
   | "openai"
   | "anthropic"
   | "qwen"
+  | "nova"
   | "mistral"
   | "grok";
 

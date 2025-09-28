@@ -7,6 +7,7 @@ import {
 import { SANDBOX_TIMEOUT_MS } from "@/lib/config";
 import { OpenAIComputerStreamer } from "@/lib/streaming/openai";
 import { QwenComputerStreamer } from "@/lib/streaming/qwen";
+import { NovaComputerStreamer } from "@/lib/streaming/nova";
 import { MistralComputerStreamer } from "@/lib/streaming/mistral";
 import { GrokComputerStreamer } from "@/lib/streaming/grok";
 import { logError } from "@/lib/logger";
@@ -29,6 +30,8 @@ class StreamerFactory {
         return new GrokComputerStreamer(desktop, resolutionScaler);
       case "qwen":
         return new QwenComputerStreamer(desktop, resolutionScaler);
+      case "nova":
+        return new NovaComputerStreamer(desktop, resolutionScaler);
       case "anthropic":
       // currently not implemented
       /* return new AnthropicComputerStreamer(desktop, resolutionScaler); */

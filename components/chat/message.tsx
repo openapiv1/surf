@@ -20,7 +20,7 @@ import {
 import { useChat } from "@/lib/chat-context";
 import { Badge } from "../ui/badge";
 import { OpenAiLogo } from "@phosphor-icons/react";
-import { AnthropicLogo, GrokLogo, MistralLogo, QwenLogo } from "../icons";
+import { AnthropicLogo, GrokLogo, MistralLogo, QwenLogo, NovaLogo } from "../icons";
 
 const messageVariants = cva("", {
   variants: {
@@ -137,6 +137,8 @@ export function ChatMessage({ message, className }: ChatMessageProps) {
         return <MistralLogo className="h-3 w-3" />;
       } else if (model === "qwen") {
         return <QwenLogo className="h-3 w-3" />;
+      } else if (model === "nova") {
+        return <NovaLogo className="h-3 w-3" />;
       } else if (model === "grok") {
         return <GrokLogo className="h-3 w-3" />;
       } else {
