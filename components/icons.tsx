@@ -290,3 +290,23 @@ export const GrokLogo = ({
     </svg>
   );
 };
+
+export const NovaLogo = ({
+  size = 16,
+  className,
+}: {
+  size?: number;
+  className?: string;
+}) => {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="currentColor"
+      className={className}
+    >
+      <path d="M12 2L13.09 8.26L17 6L14.74 10.09L21 12L14.74 13.91L17 18L13.09 15.74L12 22L10.91 15.74L7 18L9.26 13.91L3 12L9.26 10.09L7 6L10.91 8.26L12 2Z"/>
+    </svg>
+  );
+};
