@@ -2,7 +2,14 @@
  * Type definitions for Grok computer-use tooling
  */
 
+ codex/change-ai-model-to-grok-4-fast-non-reasoning-96lw3v
+export interface GrokCoordinate {
+  x: number;
+  y: number;
+}
+
 export type GrokCoordinate = [number, number];
+ main
 
 type GrokScrollDirection = "up" | "down";
 
